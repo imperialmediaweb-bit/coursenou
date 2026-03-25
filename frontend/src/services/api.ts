@@ -1,12 +1,8 @@
 import axios from 'axios';
 
-// In production: use VITE_API_URL if set, otherwise try same origin (for single-domain setups)
-// In development: fallback to localhost:3001
-const API_URL = import.meta.env.VITE_API_URL || (
-  typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-    ? window.location.origin
-    : 'http://localhost:3001'
-);
+// Same origin in production (Express serves both API and frontend)
+// In development with separate servers, set VITE_API_URL=http://localhost:3001
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: `${API_URL}/api`,

@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { seedDemoAccount } from './utils/seed';
@@ -41,7 +42,7 @@ app.use(helmet({
   crossOriginOpenerPolicy: false,
 }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -86,9 +87,18 @@ app.use('/api/summary', summaryRoutes);
 app.use('/api/duplicate', duplicateRoutes);
 app.use('/api/export', exportRoutes);
 
-// 404 handler
-app.use((_req, res) => {
+// Serve frontend static files in production
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+
+// API 404 handler (only for /api routes)
+app.use('/api/*', (_req, res) => {
   res.status(404).json({ error: 'Route not found' });
+});
+
+// SPA fallback — serve index.html for all non-API routes
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 // Error handler
