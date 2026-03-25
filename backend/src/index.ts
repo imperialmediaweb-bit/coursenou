@@ -23,6 +23,14 @@ import razorpayRoutes from './routes/razorpayRoutes';
 import paystackRoutes from './routes/paystackRoutes';
 import adminRoutes from './routes/adminRoutes';
 import publicRoutes from './routes/publicRoutes';
+import chatRoutes from './routes/chatRoutes';
+import flashcardRoutes from './routes/flashcardRoutes';
+import progressRoutes from './routes/progressRoutes';
+import ratingRoutes from './routes/ratingRoutes';
+import bookmarkRoutes from './routes/bookmarkRoutes';
+import summaryRoutes from './routes/summaryRoutes';
+import duplicateRoutes from './routes/duplicateRoutes';
+import exportRoutes from './routes/exportRoutes';
 
 const app = express();
 
@@ -65,6 +73,14 @@ app.use('/api/razorpay', razorpayRoutes);
 app.use('/api/paystack', paystackRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', publicRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/flashcards', flashcardRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/ratings', ratingRoutes);
+app.use('/api/bookmarks', bookmarkRoutes);
+app.use('/api/summary', summaryRoutes);
+app.use('/api/duplicate', duplicateRoutes);
+app.use('/api/export', exportRoutes);
 
 // 404 handler
 app.use((_req, res) => {

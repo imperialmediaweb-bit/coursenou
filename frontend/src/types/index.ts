@@ -153,3 +153,63 @@ export interface PaginatedResponse<T> {
   page: number;
   pages: number;
 }
+
+export interface FlashcardItem {
+  front: string;
+  back: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  lastReviewed: string | null;
+  nextReview: string | null;
+  correctCount: number;
+  incorrectCount: number;
+}
+
+export interface Flashcard {
+  _id: string;
+  userId: string;
+  courseId: string;
+  cards: FlashcardItem[];
+  createdAt: string;
+}
+
+export interface CourseProgress {
+  _id?: string;
+  userId?: string;
+  courseId?: string;
+  visitedSubtopics: string[];
+  percentage: number;
+  lastVisitedTopic: number;
+  lastVisitedSubtopic: number;
+  totalTimeSpent: number;
+}
+
+export interface Rating {
+  _id: string;
+  userId: string;
+  courseId: string;
+  rating: number;
+  feedback: string;
+  createdAt: string;
+}
+
+export interface CourseRatingInfo {
+  userRating: Rating | null;
+  averageRating: number;
+  totalRatings: number;
+}
+
+export interface Bookmark {
+  _id: string;
+  userId: string;
+  courseId: string | { _id: string; title: string };
+  topicIndex: number;
+  subtopicIndex: number;
+  subtopicTitle: string;
+  note: string;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}

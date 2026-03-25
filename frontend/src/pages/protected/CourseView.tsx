@@ -21,12 +21,7 @@ import {
 } from 'react-icons/hi';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-import { Course, Note } from '../../types';
-
-interface ChatMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+import { Course, ChatMessage, CourseProgress } from '../../types';
 
 export default function CourseView() {
   const { id } = useParams<{ id: string }>();
@@ -53,12 +48,28 @@ export default function CourseView() {
   const [noteContent, setNoteContent] = useState('');
   const noteTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
+  // Smart features
+  const [progress, setProgress] = useState<CourseProgress | null>(null);
+  const [summaryText, setSummaryText] = useState('');
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingHover, setRatingHover] = useState(0);
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalRatings, setTotalRatings] = useState(0);
+  const [duplicating, setDuplicating] = useState(false);
+  const startTimeRef = useRef(Date.now());
+
   const isPaid = user?.plan === 'monthly' || user?.plan === 'yearly';
 
   useEffect(() => {
     fetchCourse();
     fetchNotes();
+    fetchProgress();
+    fetchRating();
   }, [id]);
+
+  // Keyboard shortcuts - defined after navigateSubtopic
 
   const fetchCourse = async () => {
     try {
@@ -84,10 +95,112 @@ export default function CourseView() {
     }
   };
 
-  // Mark current subtopic as visited
+  const fetchProgress = async () => {
+    try {
+      const res = await api.get(`/progress/${id}`);
+      setProgress(res.data);
+      if (res.data.visitedSubtopics) {
+        setVisitedSubtopics(new Set(res.data.visitedSubtopics));
+      }
+      if (res.data.lastVisitedTopic !== undefined) {
+        setCurrentTopic(res.data.lastVisitedTopic);
+        setCurrentSubtopic(res.data.lastVisitedSubtopic);
+        setExpandedTopics(prev => new Set(prev).add(res.data.lastVisitedTopic));
+      }
+    } catch {
+      // No progress yet
+    }
+  };
+
+  const fetchRating = async () => {
+    try {
+      const res = await api.get(`/ratings/${id}`);
+      if (res.data.userRating) setRatingValue(res.data.userRating.rating);
+      setAvgRating(res.data.averageRating || 0);
+      setTotalRatings(res.data.totalRatings || 0);
+    } catch {
+      // No ratings
+    }
+  };
+
+  const saveProgress = async (visited: Set<string>) => {
+    const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+    startTimeRef.current = Date.now();
+    try {
+      await api.put(`/progress/${id}`, {
+        visitedSubtopics: Array.from(visited),
+        lastVisitedTopic: currentTopic,
+        lastVisitedSubtopic: currentSubtopic,
+        timeSpent,
+      });
+    } catch {
+      // Silent
+    }
+  };
+
+  const handleRate = async (rating: number) => {
+    setRatingValue(rating);
+    try {
+      await api.post(`/ratings/${id}`, { rating });
+      toast.success('Rating saved!');
+      fetchRating();
+    } catch {
+      toast.error('Failed to save rating');
+    }
+  };
+
+  const handleSummary = async () => {
+    if (summaryText) {
+      setSummaryOpen(!summaryOpen);
+      return;
+    }
+    setSummaryLoading(true);
+    setSummaryOpen(true);
+    try {
+      const res = await api.post(`/summary/${id}`);
+      setSummaryText(res.data.summary);
+    } catch {
+      toast.error('Failed to generate summary');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      const res = await api.post(`/duplicate/${id}`);
+      toast.success('Course duplicated!');
+      navigate(`/course/${res.data._id}`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to duplicate');
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    try {
+      await api.post('/bookmarks', {
+        courseId: id,
+        topicIndex: currentTopic,
+        subtopicIndex: currentSubtopic,
+        subtopicTitle: currentSubtopicData?.title || '',
+      });
+      toast.success('Bookmarked!');
+    } catch {
+      toast.error('Failed to bookmark');
+    }
+  };
+
+  // Mark current subtopic as visited and save progress
   useEffect(() => {
     const key = `${currentTopic}-${currentSubtopic}`;
-    setVisitedSubtopics((prev) => new Set(prev).add(key));
+    setVisitedSubtopics((prev) => {
+      const next = new Set(prev).add(key);
+      saveProgress(next);
+      return next;
+    });
   }, [currentTopic, currentSubtopic]);
 
   // Scroll chat to bottom
@@ -123,6 +236,39 @@ export default function CourseView() {
     },
     [course, currentTopic, currentSubtopic]
   );
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'j':
+          e.preventDefault();
+          navigateSubtopic('prev');
+          break;
+        case 'ArrowRight':
+        case 'k':
+          e.preventDefault();
+          navigateSubtopic('next');
+          break;
+        case 'n':
+          e.preventDefault();
+          setNotesOpen(p => !p);
+          break;
+        case 'c':
+          e.preventDefault();
+          setChatOpen(p => !p);
+          break;
+        case 's':
+          e.preventDefault();
+          setSidebarOpen(p => !p);
+          break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigateSubtopic]);
 
   const isFirst = currentTopic === 0 && currentSubtopic === 0;
   const isLast =
@@ -193,7 +339,7 @@ export default function CourseView() {
     setChatMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     try {
       setChatLoading(true);
-      const res = await api.post(`/courses/${id}/chat`, { message: userMessage });
+      const res = await api.post(`/chat/${id}`, { message: userMessage });
       setChatMessages((prev) => [
         ...prev,
         { role: 'assistant', content: res.data.reply || res.data.message },
@@ -301,13 +447,105 @@ export default function CourseView() {
             className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
               notesOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'
             }`}
-            title="Notes"
+            title="Notes (N)"
           >
             <HiOutlinePencilAlt className="h-4 w-4" />
             <span className="hidden sm:inline">Notes</span>
           </button>
+          <button
+            onClick={handleBookmark}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Bookmark this subtopic"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+            <span className="hidden sm:inline">Bookmark</span>
+          </button>
+          <Link
+            to={`/course/${id}/flashcards`}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Flashcards"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+            <span className="hidden sm:inline">Flashcards</span>
+          </Link>
+          <button
+            onClick={handleSummary}
+            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${summaryOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+            title="AI Summary"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <span className="hidden sm:inline">Summary</span>
+          </button>
+          <button
+            onClick={handleDuplicate}
+            disabled={duplicating}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Duplicate Course"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+            <span className="hidden sm:inline">{duplicating ? '...' : 'Clone'}</span>
+          </button>
         </div>
       </div>
+
+      {/* Progress Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-1.5">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            {Math.round((visitedSubtopics.size / Math.max(totalSubtopics, 1)) * 100)}% complete
+          </span>
+          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+            <div
+              className="bg-primary-600 h-1.5 rounded-full transition-all duration-300"
+              style={{ width: `${(visitedSubtopics.size / Math.max(totalSubtopics, 1)) * 100}%` }}
+            />
+          </div>
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map(star => (
+              <button
+                key={star}
+                onClick={() => handleRate(star)}
+                onMouseEnter={() => setRatingHover(star)}
+                onMouseLeave={() => setRatingHover(0)}
+                className="p-0.5"
+              >
+                <svg className={`w-4 h-4 ${(ratingHover || ratingValue) >= star ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`} viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </button>
+            ))}
+            {totalRatings > 0 && (
+              <span className="text-xs text-gray-400 ml-1">({avgRating.toFixed(1)})</span>
+            )}
+          </div>
+          <span className="text-xs text-gray-400" title="Keyboard shortcuts: Arrow keys/J/K navigate, N=notes, C=chat, S=sidebar">
+            ???
+          </span>
+        </div>
+      </div>
+
+      {/* AI Summary Panel */}
+      {summaryOpen && (
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800 px-6 py-4">
+          <div className="max-w-3xl mx-auto">
+            <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-2 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              AI Course Summary
+              <button onClick={() => setSummaryOpen(false)} className="ml-auto p-1 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded">
+                <HiOutlineX className="h-4 w-4" />
+              </button>
+            </h3>
+            {summaryLoading ? (
+              <div className="flex items-center gap-2 text-sm text-indigo-600">
+                <div className="animate-spin h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full" />
+                Generating summary...
+              </div>
+            ) : (
+              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{summaryText}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Sidebar */}
@@ -479,11 +717,12 @@ export default function CourseView() {
                 <HiOutlineX className="h-4 w-4" />
               </button>
             </div>
+            <p className="px-4 pt-2 text-xs text-gray-400">Supports **bold**, *italic*, # headings, - lists</p>
             <textarea
               value={noteContent}
               onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Write your notes here... (auto-saves)"
-              className="flex-1 p-4 resize-none outline-none text-sm text-gray-700 placeholder-gray-400"
+              placeholder="Write your notes here using Markdown... (auto-saves)"
+              className="flex-1 p-4 resize-none outline-none text-sm text-gray-700 dark:text-gray-300 dark:bg-gray-800 placeholder-gray-400 font-mono"
             />
           </div>
         )}

@@ -40,16 +40,50 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [coursesRes, statsRes] = await Promise.all([
+      const [coursesRes, certsRes] = await Promise.all([
         api.get('/courses'),
-        api.get('/courses/stats'),
+        api.get('/certificates'),
       ]);
-      setCourses(coursesRes.data.data || coursesRes.data);
-      setStats(statsRes.data);
+      const coursesList = coursesRes.data.data || coursesRes.data || [];
+      setCourses(coursesList);
+      setStats({
+        totalCourses: coursesList.length,
+        completedCourses: coursesList.filter((c: Course) => c.isCompleted).length,
+        certificatesEarned: (certsRes.data?.length || certsRes.data?.data?.length || 0),
+      });
     } catch {
-      toast.error('Failed to load dashboard data');
+      // Try just courses if certificates fails
+      try {
+        const coursesRes = await api.get('/courses');
+        const coursesList = coursesRes.data.data || coursesRes.data || [];
+        setCourses(coursesList);
+        setStats({
+          totalCourses: coursesList.length,
+          completedCourses: coursesList.filter((c: Course) => c.isCompleted).length,
+          certificatesEarned: 0,
+        });
+      } catch {
+        toast.error('Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBulkExport = async () => {
+    try {
+      const res = await api.get('/export/bulk', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'coursebit-courses-export.json');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Courses exported!');
+    } catch {
+      toast.error('Failed to export courses');
     }
   };
 
@@ -85,14 +119,64 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.name || 'there'}!
-          </h1>
-          <p className="mt-1 text-gray-500">
-            Here&apos;s an overview of your learning journey on CourseBit.
-          </p>
+        <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Welcome back, {user?.name || 'there'}!
+            </h1>
+            <p className="mt-1 text-gray-500">
+              Here&apos;s an overview of your learning journey on CourseBit.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {courses.length > 0 && (
+              <button
+                onClick={handleBulkExport}
+                className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                Export All
+              </button>
+            )}
+            <Link
+              to="/bookmarks"
+              className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              Bookmarks
+            </Link>
+          </div>
         </div>
+
+        {/* Smart Recommendations */}
+        {courses.length > 0 && (
+          <div className="mb-8 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-primary-100 dark:border-primary-800">
+            <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-300 mb-3 flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              Suggested Next Courses
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                const topics = courses.map(c => c.title);
+                const suggestions = [
+                  `Advanced ${topics[0] || 'Programming'}`,
+                  `${topics[topics.length - 1] || 'Data Science'} Best Practices`,
+                  `${topics[0] || 'Web Dev'} in Practice`,
+                ];
+                return suggestions.map((s, i) => (
+                  <Link
+                    key={i}
+                    to={`/create?title=${encodeURIComponent(s)}`}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                  >
+                    <HiOutlinePlus className="w-3 h-3" />
+                    {s}
+                  </Link>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

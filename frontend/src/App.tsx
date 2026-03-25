@@ -27,6 +27,8 @@ const Certificate = lazy(() => import('./pages/protected/CertificatePage'));
 const Billing = lazy(() => import('./pages/protected/BillingPage'));
 const Settings = lazy(() => import('./pages/protected/Settings'));
 const Notifications = lazy(() => import('./pages/protected/Notifications'));
+const FlashcardsPage = lazy(() => import('./pages/protected/FlashcardsPage'));
+const BookmarksPage = lazy(() => import('./pages/protected/BookmarksPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -86,6 +88,8 @@ const App = () => {
             <Route path="/billing" element={<Billing />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/notifications" element={<Notifications />} />
+            <Route path="/course/:id/flashcards" element={<FlashcardsPage />} />
+            <Route path="/bookmarks" element={<BookmarksPage />} />
           </Route>
 
           {/* Admin Routes */}

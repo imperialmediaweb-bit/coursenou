@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import { HiSun, HiMoon } from 'react-icons/hi2';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
+  const { isDark, toggle: toggleTheme } = useThemeStore();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -21,7 +24,7 @@ const Navbar = () => {
     }`;
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -52,6 +55,17 @@ const Navbar = () => {
                     Admin
                   </NavLink>
                 )}
+
+                <NavLink to="/bookmarks" className={navLinkClass}>
+                  Bookmarks
+                </NavLink>
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-lg text-gray-600 hover:text-primary-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-primary-400 dark:hover:bg-gray-800 transition-colors"
+                  aria-label="Toggle dark mode"
+                >
+                  {isDark ? <HiSun className="w-5 h-5" /> : <HiMoon className="w-5 h-5" />}
+                </button>
 
                 {/* User Dropdown */}
                 <div className="relative">

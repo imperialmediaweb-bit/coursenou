@@ -8,3 +8,7 @@ export { default as Subscription } from './Subscription';
 export { default as Blog } from './Blog';
 export { default as ContactMessage } from './ContactMessage';
 export { default as ContentPage } from './ContentPage';
+export { default as Flashcard } from './Flashcard';
+export { default as CourseProgress } from './CourseProgress';
+export { default as Rating } from './Rating';
+export { default as Bookmark } from './Bookmark';
