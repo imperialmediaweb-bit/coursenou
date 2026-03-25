@@ -183,7 +183,8 @@ Requirements:
 - All content must be in ${language}`;
 
     const result = await this.generate(provider, prompt);
-    return this.parseJSON<TopicResult[]>(result);
+    const topics = this.parseJSON<TopicResult[]>(result);
+    return topics.slice(0, numTopics);
   }
 
   async generateCourse(
