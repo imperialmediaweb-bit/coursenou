@@ -63,7 +63,7 @@ export default function AIProviders() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-display italic text-white text-center mb-16"
+          className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-16"
         >
           Powered by the best AI in the world
         </motion.h2>

@@ -32,7 +32,7 @@ export default function CTASection() {
         <motion.h2
           {...stagger(0)}
           animate={inView ? stagger(0).animate : stagger(0).initial}
-          className="text-3xl sm:text-4xl lg:text-6xl font-display italic text-white"
+          className="text-3xl sm:text-4xl lg:text-6xl font-display font-bold text-white"
         >
           Start creating with AI today.
         </motion.h2>

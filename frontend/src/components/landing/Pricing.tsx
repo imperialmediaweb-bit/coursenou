@@ -135,7 +135,7 @@ export default function Pricing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-display italic text-white text-center"
+          className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white text-center"
         >
           Simple, transparent pricing
         </motion.h2>
@@ -236,7 +236,7 @@ export default function Pricing() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.25 }}
-                      className="text-4xl font-display italic text-white"
+                      className="text-4xl font-display font-bold text-white"
                     >
                       {price.amount}
                     </motion.span>

@@ -30,7 +30,7 @@ export default function LandingNavbar() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-0.5">
-              <span className="text-xl lg:text-2xl font-display italic text-white">Coursbit</span>
+              <span className="text-xl lg:text-2xl font-display font-bold text-white">Coursbit</span>
               <span className="w-1.5 h-1.5 rounded-full bg-accent mt-auto mb-1.5" />
             </Link>
 

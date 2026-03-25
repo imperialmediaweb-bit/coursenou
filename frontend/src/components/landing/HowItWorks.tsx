@@ -57,7 +57,7 @@ export default function HowItWorks() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-3xl sm:text-4xl lg:text-5xl font-display italic text-white text-center mb-16 lg:mb-20"
+          className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-16 lg:mb-20"
         >
           From idea to full course in 3 steps
         </motion.h2>
@@ -80,7 +80,7 @@ export default function HowItWorks() {
                 className="bg-surface border border-border rounded-2xl p-8 relative overflow-hidden group cursor-default"
               >
                 {/* Background step number */}
-                <span className="text-[120px] lg:text-[160px] font-display italic text-accent/5 absolute -top-6 -right-2 leading-none select-none pointer-events-none">
+                <span className="text-[120px] lg:text-[160px] font-display font-bold text-accent/5 absolute -top-6 -right-2 leading-none select-none pointer-events-none">
                   {step.number}
                 </span>
 

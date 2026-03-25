@@ -27,7 +27,7 @@ export default {
         white: '#F0F0FF',
       },
       fontFamily: {
-        display: ['"Instrument Serif"', 'serif'],
+        display: ['Inter', 'sans-serif'],
         sans: ['"DM Sans"', 'sans-serif'],
       },
       keyframes: {

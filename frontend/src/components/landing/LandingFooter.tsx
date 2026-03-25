@@ -67,7 +67,7 @@ export default function LandingFooter() {
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
             <a href="/" className="inline-flex items-center gap-0">
-              <span className="font-display italic text-xl text-white">
+              <span className="font-display font-bold text-xl text-white">
                 Coursbit
               </span>
               <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5 -mt-2" />

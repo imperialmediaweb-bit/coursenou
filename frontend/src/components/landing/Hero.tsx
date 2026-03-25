@@ -156,7 +156,7 @@ export default function Hero() {
             {/* Headline */}
             <motion.h1
               {...stagger(0.1)}
-              className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display italic text-white leading-[1.08] tracking-tight mb-5 sm:mb-6"
+              className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-bold text-white leading-[1.08] tracking-tight mb-5 sm:mb-6"
             >
               Generate complete
               <br />
