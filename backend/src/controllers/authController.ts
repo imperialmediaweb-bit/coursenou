@@ -97,7 +97,12 @@ export const login = async (
       return;
     }
 
-    const user = await User.findOne({ email });
+    let user;
+    try {
+      user = await User.findOne({ email });
+    } catch {
+      throw new AppError('Database not available. Use demo account: demo@coursbit.com', 503);
+    }
     if (!user) {
       throw new AppError('Invalid email or password', 401);
     }

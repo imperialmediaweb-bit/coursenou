@@ -97,29 +97,25 @@ app.use(errorHandler);
 // Database connection and server start
 const PORT = process.env.PORT || 3001;
 
-// Start server — MongoDB is optional (demo mode works without it)
-const startServer = () => {
-  app.listen(parseInt(PORT as string), '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-};
+// Start server FIRST, then try MongoDB (so demo mode always works)
+app.listen(parseInt(PORT as string), '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
+// Try MongoDB connection in background (non-blocking)
 if (process.env.MONGODB_URI) {
   mongoose
     .connect(process.env.MONGODB_URI)
     .then(async () => {
       console.log('Connected to MongoDB');
-      await seedDemoAccount();
-      startServer();
+      try { await seedDemoAccount(); } catch {}
     })
     .catch((err) => {
-      console.error('MongoDB connection failed:', err.message);
-      console.log('Starting in demo mode (no database)...');
-      startServer();
+      console.error('MongoDB not available:', err.message);
+      console.log('Running in demo mode — demo@coursbit.com login works without DB');
     });
 } else {
-  console.log('No MONGODB_URI — starting in demo mode (no database)');
-  startServer();
+  console.log('No MONGODB_URI set — running in demo mode');
 }
 
 export default app;
