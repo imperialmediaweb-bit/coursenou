@@ -57,8 +57,10 @@ export const generateTopics = async (
 
     const topics = await aiService.generateTopics(user.aiProvider, title, language, numTopics);
 
-    user.aiCreditsUsed += 1;
-    await user.save();
+    if (String(user._id) !== 'demo-user-id-001') {
+      user.aiCreditsUsed += 1;
+      await user.save();
+    }
 
     res.status(200).json({ success: true, data: topics });
   } catch (error) {
@@ -114,6 +116,26 @@ export const generateCourse = async (
         ),
       }))
     );
+
+    // Demo user — return course object without saving to DB
+    if (String(user._id) === 'demo-user-id-001') {
+      const demoCourse = {
+        _id: 'demo-course-' + Date.now(),
+        userId: user._id,
+        title,
+        language,
+        type,
+        topics: topicsWithImages,
+        shareToken: uuidv4(),
+        isCompleted: false,
+        completedAt: null,
+        audioUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      res.status(201).json({ success: true, data: demoCourse });
+      return;
+    }
 
     const course = await Course.create({
       userId: user._id,
