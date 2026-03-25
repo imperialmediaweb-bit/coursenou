@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
+import { storeDemoCourse, getDemoCourse, getAllDemoCourses } from '../utils/demoStore';
 import Course from '../models/Course';
 import User from '../models/User';
 import Certificate from '../models/Certificate';
@@ -134,6 +135,7 @@ export const generateCourse = async (
         createdAt: new Date(),
         updatedAt: new Date(),
       };
+      storeDemoCourse(demoCourse);
       res.status(201).json({ success: true, data: demoCourse });
       return;
     }
@@ -159,9 +161,10 @@ export const getCourses = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Demo user — return empty array (no DB)
+    // Demo user — return from memory store
     if (String(req.user!._id) === 'demo-user-id-001') {
-      res.status(200).json({ success: true, data: [] });
+      const demoCourses = getAllDemoCourses('demo-user-id-001');
+      res.status(200).json({ success: true, data: demoCourses });
       return;
     }
     const courses = await Course.find({ userId: req.user!._id }).sort({ createdAt: -1 });
@@ -177,6 +180,13 @@ export const getCourseById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Check demo store first
+    const demoCourse = getDemoCourse(req.params.id);
+    if (demoCourse) {
+      res.status(200).json({ success: true, data: demoCourse });
+      return;
+    }
+
     const course = await Course.findById(req.params.id);
     if (!course) {
       throw new AppError('Course not found', 404);

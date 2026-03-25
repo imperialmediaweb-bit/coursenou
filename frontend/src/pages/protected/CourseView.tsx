@@ -75,7 +75,7 @@ export default function CourseView() {
     try {
       setLoading(true);
       const res = await api.get(`/courses/${id}`);
-      setCourse(res.data);
+      setCourse(res.data.data || res.data);
     } catch {
       toast.error('Failed to load course');
       navigate('/dashboard');
@@ -385,24 +385,24 @@ export default function CourseView() {
   const currentSubtopicData = currentTopicData?.subtopics[currentSubtopic];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-base flex flex-col">
       {/* Action Bar */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between flex-wrap gap-2">
+      <div className="bg-surface border-b border-border px-4 py-2 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+            className="lg:hidden p-2 rounded-lg hover:bg-surface"
           >
             {sidebarOpen ? <HiOutlineX className="h-5 w-5" /> : <HiOutlineMenu className="h-5 w-5" />}
           </button>
-          <h1 className="text-lg font-semibold text-gray-900 truncate max-w-xs sm:max-w-md">
+          <h1 className="text-lg font-semibold text-white truncate max-w-xs sm:max-w-md">
             {course.title}
           </h1>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <button
             onClick={handleExportPdf}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Export PDF"
           >
             <HiOutlineDocumentDownload className="h-4 w-4" />
@@ -410,7 +410,7 @@ export default function CourseView() {
           </button>
           <button
             onClick={handleExportPpt}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors relative"
             title="Export PPT"
           >
             <HiOutlinePresentationChartBar className="h-4 w-4" />
@@ -419,7 +419,7 @@ export default function CourseView() {
           </button>
           <button
             onClick={handleAudio}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors relative"
             title="Audio"
           >
             <HiOutlineVolumeUp className="h-4 w-4" />
@@ -428,7 +428,7 @@ export default function CourseView() {
           </button>
           <button
             onClick={handleShare}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Share"
           >
             <HiOutlineShare className="h-4 w-4" />
@@ -436,7 +436,7 @@ export default function CourseView() {
           </button>
           <Link
             to={`/course/${id}/quiz`}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Quiz"
           >
             <HiOutlineAcademicCap className="h-4 w-4" />
@@ -445,7 +445,7 @@ export default function CourseView() {
           <button
             onClick={() => setNotesOpen(!notesOpen)}
             className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-              notesOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'
+              notesOpen ? 'bg-accent/20 text-accent-glow' : 'text-prose hover:bg-surface'
             }`}
             title="Notes (N)"
           >
@@ -454,7 +454,7 @@ export default function CourseView() {
           </button>
           <button
             onClick={handleBookmark}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Bookmark this subtopic"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
@@ -462,7 +462,7 @@ export default function CourseView() {
           </button>
           <Link
             to={`/course/${id}/flashcards`}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Flashcards"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
@@ -470,7 +470,7 @@ export default function CourseView() {
           </Link>
           <button
             onClick={handleSummary}
-            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${summaryOpen ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100'}`}
+            className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-colors ${summaryOpen ? 'bg-accent/20 text-accent-glow' : 'text-prose hover:bg-surface'}`}
             title="AI Summary"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
@@ -479,7 +479,7 @@ export default function CourseView() {
           <button
             onClick={handleDuplicate}
             disabled={duplicating}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm text-prose hover:bg-surface rounded-lg transition-colors"
             title="Duplicate Course"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -489,12 +489,12 @@ export default function CourseView() {
       </div>
 
       {/* Progress Bar */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-1.5">
+      <div className="bg-surface dark:bg-gray-800 border-b border-border dark:border-gray-700 px-4 py-1.5">
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500 whitespace-nowrap">
+          <span className="text-xs text-muted whitespace-nowrap">
             {Math.round((visitedSubtopics.size / Math.max(totalSubtopics, 1)) * 100)}% complete
           </span>
-          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+          <div className="flex-1 bg-border dark:bg-gray-700 rounded-full h-1.5">
             <div
               className="bg-primary-600 h-1.5 rounded-full transition-all duration-300"
               style={{ width: `${(visitedSubtopics.size / Math.max(totalSubtopics, 1)) * 100}%` }}
@@ -515,10 +515,10 @@ export default function CourseView() {
               </button>
             ))}
             {totalRatings > 0 && (
-              <span className="text-xs text-gray-400 ml-1">({avgRating.toFixed(1)})</span>
+              <span className="text-xs text-muted ml-1">({avgRating.toFixed(1)})</span>
             )}
           </div>
-          <span className="text-xs text-gray-400" title="Keyboard shortcuts: Arrow keys/J/K navigate, N=notes, C=chat, S=sidebar">
+          <span className="text-xs text-muted" title="Keyboard shortcuts: Arrow keys/J/K navigate, N=notes, C=chat, S=sidebar">
             ???
           </span>
         </div>
@@ -526,22 +526,22 @@ export default function CourseView() {
 
       {/* AI Summary Panel */}
       {summaryOpen && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800 px-6 py-4">
+        <div className="bg-accent/10 dark:bg-indigo-900/20 border-b border-indigo-200 dark:border-indigo-800 px-6 py-4">
           <div className="max-w-3xl mx-auto">
-            <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-2 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-accent-glow dark:text-indigo-300 mb-2 flex items-center gap-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
               AI Course Summary
-              <button onClick={() => setSummaryOpen(false)} className="ml-auto p-1 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded">
+              <button onClick={() => setSummaryOpen(false)} className="ml-auto p-1 hover:bg-accent/20 dark:hover:bg-indigo-800 rounded">
                 <HiOutlineX className="h-4 w-4" />
               </button>
             </h3>
             {summaryLoading ? (
-              <div className="flex items-center gap-2 text-sm text-indigo-600">
+              <div className="flex items-center gap-2 text-sm text-accent">
                 <div className="animate-spin h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full" />
                 Generating summary...
               </div>
             ) : (
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{summaryText}</p>
+              <p className="text-sm text-prose dark:text-gray-300 leading-relaxed">{summaryText}</p>
             )}
           </div>
         </div>
@@ -552,10 +552,10 @@ export default function CourseView() {
         <div
           className={`${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-30 w-72 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-200 pt-[52px] lg:pt-0`}
+          } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-30 w-72 bg-surface border-r border-border overflow-y-auto transition-transform duration-200 pt-[52px] lg:pt-0`}
         >
           <div className="p-4">
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-semibold text-muted uppercase tracking-wider mb-3">
               Topics
             </h3>
             <nav className="space-y-1">
@@ -572,8 +572,8 @@ export default function CourseView() {
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors ${
                       currentTopic === tIndex
-                        ? 'bg-indigo-50 text-indigo-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-accent/10 text-accent-glow font-medium'
+                        : 'text-prose hover:bg-base'
                     }`}
                   >
                     <span className="truncate text-left">{topic.title}</span>
@@ -598,8 +598,8 @@ export default function CourseView() {
                             }}
                             className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
                               isActive
-                                ? 'bg-indigo-100 text-indigo-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50'
+                                ? 'bg-accent/20 text-accent-glow font-medium'
+                                : 'text-prose hover:bg-base'
                             }`}
                           >
                             {isVisited ? (
@@ -632,7 +632,7 @@ export default function CourseView() {
           <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
             {currentSubtopicData && (
               <>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                <h2 className="text-2xl font-bold text-white mb-6">
                   {currentSubtopicData.title}
                 </h2>
 
@@ -656,7 +656,7 @@ export default function CourseView() {
 
                 <div className="prose prose-indigo max-w-none mb-8">
                   {currentSubtopicData.content.split('\n').map((paragraph, i) => (
-                    <p key={i} className="text-gray-700 leading-relaxed mb-4">
+                    <p key={i} className="text-prose leading-relaxed mb-4">
                       {paragraph}
                     </p>
                   ))}
@@ -665,11 +665,11 @@ export default function CourseView() {
             )}
 
             {/* Navigation */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+            <div className="flex items-center justify-between pt-6 border-t border-border">
               <button
                 onClick={() => navigateSubtopic('prev')}
                 disabled={isFirst}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <HiOutlineChevronLeft className="h-4 w-4" />
                 Previous
@@ -696,7 +696,7 @@ export default function CourseView() {
               <button
                 onClick={() => navigateSubtopic('next')}
                 disabled={!!isLast}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Next
                 <HiOutlineChevronRight className="h-4 w-4" />
@@ -707,22 +707,22 @@ export default function CourseView() {
 
         {/* Notes Panel */}
         {notesOpen && (
-          <div className="w-80 bg-white border-l border-gray-200 flex flex-col">
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Notes</h3>
+          <div className="w-80 bg-surface border-l border-border flex flex-col">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <h3 className="font-semibold text-white">Notes</h3>
               <button
                 onClick={() => setNotesOpen(false)}
-                className="p-1 rounded hover:bg-gray-100"
+                className="p-1 rounded hover:bg-surface"
               >
                 <HiOutlineX className="h-4 w-4" />
               </button>
             </div>
-            <p className="px-4 pt-2 text-xs text-gray-400">Supports **bold**, *italic*, # headings, - lists</p>
+            <p className="px-4 pt-2 text-xs text-muted">Supports **bold**, *italic*, # headings, - lists</p>
             <textarea
               value={noteContent}
               onChange={(e) => onNoteChange(e.target.value)}
               placeholder="Write your notes here using Markdown... (auto-saves)"
-              className="flex-1 p-4 resize-none outline-none text-sm text-gray-700 dark:text-gray-300 dark:bg-gray-800 placeholder-gray-400 font-mono"
+              className="flex-1 p-4 resize-none outline-none text-sm text-prose dark:text-gray-300 dark:bg-gray-800 placeholder-gray-400 font-mono"
             />
           </div>
         )}
@@ -732,7 +732,7 @@ export default function CourseView() {
       <button
         onClick={() => setChatOpen(!chatOpen)}
         className={`fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center z-40 transition-colors ${
-          chatOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-600 hover:bg-indigo-700'
+          chatOpen ? 'bg-red-500 hover:bg-red-600' : 'bg-accent hover:bg-accent-glow'
         } text-white`}
       >
         {chatOpen ? (
@@ -744,14 +744,14 @@ export default function CourseView() {
 
       {/* Chat Panel */}
       {chatOpen && (
-        <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-2xl border border-gray-200 flex flex-col z-40 max-h-[500px]">
-          <div className="p-4 border-b border-gray-200 bg-indigo-600 rounded-t-xl">
+        <div className="fixed bottom-24 right-6 w-96 max-w-[calc(100vw-2rem)] bg-surface rounded-xl shadow-2xl border border-border flex flex-col z-40 max-h-[500px]">
+          <div className="p-4 border-b border-border bg-accent rounded-t-xl">
             <h3 className="font-semibold text-white">Course Assistant</h3>
             <p className="text-xs text-indigo-200">Ask questions about this course</p>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px]">
             {chatMessages.length === 0 && (
-              <p className="text-sm text-gray-400 text-center mt-8">
+              <p className="text-sm text-muted text-center mt-8">
                 Ask anything about this course content!
               </p>
             )}
@@ -763,8 +763,8 @@ export default function CourseView() {
                 <div
                   className={`max-w-[80%] px-4 py-2 rounded-2xl text-sm ${
                     msg.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-br-md'
-                      : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                      ? 'bg-accent text-white rounded-br-md'
+                      : 'bg-surface text-white rounded-bl-md'
                   }`}
                 >
                   {msg.content}
@@ -773,7 +773,7 @@ export default function CourseView() {
             ))}
             {chatLoading && (
               <div className="flex justify-start">
-                <div className="bg-gray-100 px-4 py-2 rounded-2xl rounded-bl-md">
+                <div className="bg-surface px-4 py-2 rounded-2xl rounded-bl-md">
                   <div className="flex gap-1">
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
                     <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.1s]" />
@@ -784,7 +784,7 @@ export default function CourseView() {
             )}
             <div ref={chatEndRef} />
           </div>
-          <div className="p-3 border-t border-gray-200">
+          <div className="p-3 border-t border-border">
             <div className="flex gap-2">
               <input
                 type="text"
@@ -792,12 +792,12 @@ export default function CourseView() {
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleChatSend()}
                 placeholder="Type a message..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full text-sm outline-none focus:ring-2 focus:ring-indigo-500 focus:border-accent"
               />
               <button
                 onClick={handleChatSend}
                 disabled={chatLoading || !chatInput.trim()}
-                className="p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="p-2 bg-accent text-white rounded-full hover:bg-accent-glow disabled:opacity-50 transition-colors"
               >
                 <HiOutlinePaperAirplane className="h-4 w-4 rotate-90" />
               </button>

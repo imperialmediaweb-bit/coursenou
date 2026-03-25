@@ -113,41 +113,41 @@ export default function Settings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-base py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-3xl font-bold text-white">Settings</h1>
 
         {/* Profile Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-6">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <HiOutlineUser className="h-5 w-5 text-indigo-600" />
+            <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+              <HiOutlineUser className="h-5 w-5 text-accent" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Profile</h2>
+            <h2 className="text-lg font-semibold text-white">Profile</h2>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <label className="block text-sm font-medium text-prose mb-1">Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-prose mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
               />
             </div>
             <button
               onClick={handleSaveProfile}
               disabled={savingProfile}
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-glow transition-colors disabled:opacity-50"
             >
               {savingProfile ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -158,51 +158,51 @@ export default function Settings() {
         </div>
 
         {/* Password Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
               <HiOutlineLockClosed className="h-5 w-5 text-amber-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">Change Password</h2>
+            <h2 className="text-lg font-semibold text-white">Change Password</h2>
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-prose mb-1">
                 Current Password
               </label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-prose mb-1">
                 New Password
               </label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-prose mb-1">
                 Confirm New Password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
               />
             </div>
             <button
               onClick={handleChangePassword}
               disabled={savingPassword}
-              className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-glow transition-colors disabled:opacity-50"
             >
               {savingPassword ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -213,19 +213,19 @@ export default function Settings() {
         </div>
 
         {/* AI Provider Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <HiOutlineChip className="h-5 w-5 text-purple-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">AI Provider</h2>
+            <h2 className="text-lg font-semibold text-white">AI Provider</h2>
           </div>
           <div className="space-y-3 mb-4">
             <label
               className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                 aiProvider === 'gemini'
-                  ? 'border-indigo-600 bg-indigo-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-indigo-600 bg-accent/10'
+                  : 'border-border hover:border-gray-300'
               }`}
             >
               <input
@@ -242,19 +242,19 @@ export default function Settings() {
                 }`}
               >
                 {aiProvider === 'gemini' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
                 )}
               </div>
               <div>
-                <p className="font-medium text-gray-900">Google Gemini</p>
-                <p className="text-sm text-gray-500">Fast and efficient AI generation</p>
+                <p className="font-medium text-white">Google Gemini</p>
+                <p className="text-sm text-muted">Fast and efficient AI generation</p>
               </div>
             </label>
             <label
               className={`flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
                 aiProvider === 'openai'
-                  ? 'border-indigo-600 bg-indigo-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-indigo-600 bg-accent/10'
+                  : 'border-border hover:border-gray-300'
               }`}
             >
               <input
@@ -271,12 +271,12 @@ export default function Settings() {
                 }`}
               >
                 {aiProvider === 'openai' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
                 )}
               </div>
               <div>
-                <p className="font-medium text-gray-900">OpenAI</p>
-                <p className="text-sm text-gray-500">Advanced language models</p>
+                <p className="font-medium text-white">OpenAI</p>
+                <p className="text-sm text-muted">Advanced language models</p>
               </div>
             </label>
 
@@ -284,8 +284,8 @@ export default function Settings() {
             <label
               className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                 aiProvider === 'claude'
-                  ? 'border-indigo-600 bg-indigo-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-indigo-600 bg-accent/10'
+                  : 'border-border hover:border-gray-300'
               }`}
             >
               <input
@@ -302,19 +302,19 @@ export default function Settings() {
                 }`}
               >
                 {aiProvider === 'claude' && (
-                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
                 )}
               </div>
               <div>
-                <p className="font-medium text-gray-900">Claude</p>
-                <p className="text-sm text-gray-500">Anthropic&apos;s intelligent assistant</p>
+                <p className="font-medium text-white">Claude</p>
+                <p className="text-sm text-muted">Anthropic&apos;s intelligent assistant</p>
               </div>
             </label>
           </div>
           <button
             onClick={handleSaveProvider}
             disabled={savingProvider}
-            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-glow transition-colors disabled:opacity-50"
           >
             {savingProvider ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -324,14 +324,14 @@ export default function Settings() {
         </div>
 
         {/* Danger Zone */}
-        <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
+        <div className="bg-surface rounded-xl shadow-sm border border-red-200 p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
               <HiOutlineExclamationCircle className="h-5 w-5 text-red-600" />
             </div>
             <h2 className="text-lg font-semibold text-red-600">Danger Zone</h2>
           </div>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-muted mb-4">
             Once you delete your account, there is no going back. All your courses, certificates,
             and data will be permanently removed.
           </p>
@@ -347,14 +347,14 @@ export default function Settings() {
         {/* Delete Confirmation Dialog */}
         {showDeleteDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
+            <div className="bg-surface rounded-xl p-6 max-w-md w-full shadow-xl">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                   <HiOutlineExclamationCircle className="h-6 w-6 text-red-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">Delete Account</h3>
+                <h3 className="text-lg font-semibold text-white">Delete Account</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4">
+              <p className="text-sm text-muted mb-4">
                 This action is irreversible. Type <strong>DELETE</strong> below to confirm.
               </p>
               <input
@@ -370,7 +370,7 @@ export default function Settings() {
                     setShowDeleteDialog(false);
                     setDeleteConfirm('');
                   }}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
