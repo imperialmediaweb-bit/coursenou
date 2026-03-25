@@ -28,18 +28,18 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16">
+    <div className="min-h-screen bg-base py-16">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Contact Us
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-prose">
             Have a question or feedback? We would love to hear from you.
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
           {sent ? (
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -57,10 +57,10 @@ export default function Contact() {
                   />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Message Sent!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-prose mb-6">
                 Thank you for reaching out. We will get back to you as soon as
                 possible.
               </p>
@@ -71,7 +71,7 @@ export default function Contact() {
                   setEmail('');
                   setMessage('');
                 }}
-                className="text-indigo-600 hover:text-indigo-700 font-medium"
+                className="text-accent hover:text-accent-glow font-medium"
               >
                 Send another message
               </button>
@@ -81,7 +81,7 @@ export default function Contact() {
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-prose mb-1"
                 >
                   Name
                 </label>
@@ -90,7 +90,7 @@ export default function Contact() {
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                  className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors"
                   placeholder="Your name"
                   required
                 />
@@ -99,7 +99,7 @@ export default function Contact() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-prose mb-1"
                 >
                   Email
                 </label>
@@ -108,7 +108,7 @@ export default function Contact() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                  className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors"
                   placeholder="you@example.com"
                   required
                 />
@@ -117,7 +117,7 @@ export default function Contact() {
               <div>
                 <label
                   htmlFor="message"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-prose mb-1"
                 >
                   Message
                 </label>
@@ -126,7 +126,7 @@ export default function Contact() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={5}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors resize-none"
+                  className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors resize-none"
                   placeholder="How can we help?"
                   required
                 />
@@ -135,7 +135,7 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 bg-accent text-white font-semibold rounded-lg hover:bg-accent-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Sending...' : 'Send Message'}
               </button>

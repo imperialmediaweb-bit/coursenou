@@ -4,6 +4,7 @@ import { AppError } from '../utils/AppError';
 import Course from '../models/Course';
 import Quiz from '../models/Quiz';
 import { aiService } from '../services/aiService';
+import { getDemoCourse } from '../utils/demoStore';
 
 export const generateQuiz = async (
   req: AuthRequest,
@@ -14,6 +15,30 @@ export const generateQuiz = async (
     const { courseId } = req.params;
     if (!courseId) {
       throw new AppError('Course ID is required', 400);
+    }
+
+    if (String(req.user!._id) === 'demo-user-id-001' || courseId.startsWith('demo-')) {
+      const demoCourse = getDemoCourse(courseId);
+      let courseContent = '';
+      if (demoCourse) {
+        courseContent = demoCourse.topics
+          .map((topic: any) =>
+            topic.subtopics.map((subtopic: any) => subtopic.content).join('\n')
+          )
+          .join('\n');
+      } else {
+        courseContent = 'General knowledge course content for demo purposes.';
+      }
+      const questions = await aiService.generateQuiz(
+        req.user!.aiProvider,
+        courseContent,
+        demoCourse?.language || 'English',
+        10
+      );
+      req.user!.aiCreditsUsed += 1;
+      await req.user!.save();
+      res.status(200).json({ success: true, data: { questions, courseId, score: null, passed: false } });
+      return;
     }
 
     const course = await Course.findById(courseId);
@@ -65,6 +90,11 @@ export const getQuiz = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: null });
+      return;
+    }
+
     const quiz = await Quiz.findOne({
       courseId: req.params.courseId,
       userId: req.user!._id,
@@ -86,6 +116,11 @@ export const submitQuiz = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: { score: 80, passed: true } });
+      return;
+    }
+
     const quiz = await Quiz.findOne({
       courseId: req.params.courseId,
       userId: req.user!._id,

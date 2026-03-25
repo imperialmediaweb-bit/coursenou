@@ -183,9 +183,18 @@ export const refresh = async (
       throw new AppError('Refresh token not found', 401);
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as {
+    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'demo-refresh-secret-key-minimum-64-chars-for-security-here';
+    const decoded = jwt.verify(refreshToken, jwtRefreshSecret) as {
       userId: string;
     };
+
+    // Demo user refresh bypass
+    if (decoded.userId === 'demo-user-id-001') {
+      const jwtSecret = process.env.JWT_SECRET || 'demo-jwt-secret-key-minimum-64-chars-for-security-purposes-here';
+      const newAccessToken = jwt.sign({ userId: 'demo-user-id-001' }, jwtSecret, { expiresIn: '24h' as any });
+      res.json({ accessToken: newAccessToken });
+      return;
+    }
 
     const user = await User.findById(decoded.userId);
     if (!user) {

@@ -10,6 +10,11 @@ export const rateCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: { rating: req.body.rating, feedback: req.body.feedback || '' } });
+      return;
+    }
+
     const user = req.user!;
     const { courseId } = req.params;
     const { rating, feedback } = req.body;
@@ -51,6 +56,11 @@ export const getCourseRating = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: { userRating: null, averageRating: 0, totalRatings: 0 } });
+      return;
+    }
+
     const user = req.user!;
     const { courseId } = req.params;
 
@@ -91,6 +101,11 @@ export const getCourseRatings = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: [] });
+      return;
+    }
+
     const { courseId } = req.params;
 
     const ratings = await Rating.find({ courseId })

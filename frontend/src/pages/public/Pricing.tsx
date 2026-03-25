@@ -64,14 +64,14 @@ const comparisonFeatures = [
 
 export default function Pricing() {
   return (
-    <div className="min-h-screen bg-gray-50 py-16">
+    <div className="min-h-screen bg-base py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-prose max-w-2xl mx-auto">
             Start free and upgrade as you grow. Save 33% with yearly billing.
             No hidden fees, cancel anytime.
           </p>
@@ -82,29 +82,29 @@ export default function Pricing() {
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`bg-white rounded-xl shadow-sm border-2 p-8 relative ${
+              className={`bg-surface rounded-xl shadow-sm border-2 p-8 relative ${
                 plan.badge
-                  ? 'border-indigo-600 shadow-md'
-                  : 'border-gray-100'
+                  ? 'border-accent shadow-md'
+                  : 'border-border'
               }`}
             >
               {plan.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-indigo-600 text-white text-sm font-semibold px-4 py-1 rounded-full">
+                  <span className="bg-accent text-white text-sm font-semibold px-4 py-1 rounded-full">
                     {plan.badge}
                   </span>
                 </div>
               )}
               <div className="text-center mb-6">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-white mb-2">
                   {plan.name}
                 </h3>
                 <div className="flex items-baseline justify-center">
-                  <span className="text-4xl font-bold text-gray-900">
+                  <span className="text-4xl font-bold text-white">
                     {plan.price}
                   </span>
                   {plan.period && (
-                    <span className="text-gray-500 ml-1">{plan.period}</span>
+                    <span className="text-muted ml-1">{plan.period}</span>
                   )}
                 </div>
                 {plan.name === 'Yearly' && (
@@ -119,11 +119,11 @@ export default function Pricing() {
                     {f.included ? (
                       <HiCheck className="w-5 h-5 text-green-500 flex-shrink-0" />
                     ) : (
-                      <HiXMark className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                      <HiXMark className="w-5 h-5 text-muted flex-shrink-0" />
                     )}
                     <span
                       className={
-                        f.included ? 'text-gray-700' : 'text-gray-400'
+                        f.included ? 'text-prose' : 'text-muted'
                       }
                     >
                       {f.text}
@@ -135,8 +135,8 @@ export default function Pricing() {
                 to="/register"
                 className={`block w-full text-center py-3 rounded-lg font-semibold transition-colors ${
                   plan.badge
-                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    ? 'bg-accent text-white hover:bg-accent-glow'
+                    : 'bg-surface text-white hover:bg-border'
                 }`}
               >
                 Get Started
@@ -147,24 +147,24 @@ export default function Pricing() {
 
         {/* Comparison Table */}
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-8">
             Full Feature Comparison
           </h2>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50">
-                    <th className="text-left px-6 py-4 text-sm font-semibold text-gray-900">
+                  <tr className="border-b border-border bg-base">
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-white">
                       Feature
                     </th>
-                    <th className="text-center px-6 py-4 text-sm font-semibold text-gray-900">
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-white">
                       Free
                     </th>
-                    <th className="text-center px-6 py-4 text-sm font-semibold text-gray-900">
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-white">
                       Monthly
                     </th>
-                    <th className="text-center px-6 py-4 text-sm font-semibold text-indigo-600">
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-accent">
                       Yearly
                     </th>
                   </tr>
@@ -173,39 +173,39 @@ export default function Pricing() {
                   {comparisonFeatures.map((row, idx) => (
                     <tr
                       key={row.feature}
-                      className={idx < comparisonFeatures.length - 1 ? 'border-b border-gray-100' : ''}
+                      className={idx < comparisonFeatures.length - 1 ? 'border-b border-border' : ''}
                     >
-                      <td className="px-6 py-4 text-sm text-gray-700 font-medium">
+                      <td className="px-6 py-4 text-sm text-prose font-medium">
                         {row.feature}
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
-                        <span className={row.free === 'No' ? 'text-gray-400' : 'text-gray-700'}>
+                        <span className={row.free === 'No' ? 'text-muted' : 'text-prose'}>
                           {row.free === 'Yes' ? (
                             <HiCheck className="w-5 h-5 text-green-500 mx-auto" />
                           ) : row.free === 'No' ? (
-                            <HiXMark className="w-5 h-5 text-gray-300 mx-auto" />
+                            <HiXMark className="w-5 h-5 text-muted mx-auto" />
                           ) : (
                             row.free
                           )}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
-                        <span className={row.monthly === 'No' ? 'text-gray-400' : 'text-gray-700'}>
+                        <span className={row.monthly === 'No' ? 'text-muted' : 'text-prose'}>
                           {row.monthly === 'Yes' ? (
                             <HiCheck className="w-5 h-5 text-green-500 mx-auto" />
                           ) : row.monthly === 'No' ? (
-                            <HiXMark className="w-5 h-5 text-gray-300 mx-auto" />
+                            <HiXMark className="w-5 h-5 text-muted mx-auto" />
                           ) : (
                             row.monthly
                           )}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-center">
-                        <span className={row.yearly === 'No' ? 'text-gray-400' : 'text-indigo-600 font-medium'}>
+                        <span className={row.yearly === 'No' ? 'text-muted' : 'text-accent font-medium'}>
                           {row.yearly === 'Yes' ? (
                             <HiCheck className="w-5 h-5 text-green-500 mx-auto" />
                           ) : row.yearly === 'No' ? (
-                            <HiXMark className="w-5 h-5 text-gray-300 mx-auto" />
+                            <HiXMark className="w-5 h-5 text-muted mx-auto" />
                           ) : (
                             row.yearly
                           )}

@@ -44,7 +44,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ isLoading: true });
       const res = await api.get('/auth/me');
-      set({ user: res.data, isAuthenticated: true, isLoading: false });
+      const userData = res.data.user || res.data;
+      set({ user: userData, isAuthenticated: true, isLoading: false });
     } catch {
       localStorage.removeItem('accessToken');
       set({ user: null, isAuthenticated: false, isLoading: false });

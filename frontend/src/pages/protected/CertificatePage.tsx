@@ -50,7 +50,7 @@ export default function CertificatePage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
@@ -58,18 +58,18 @@ export default function CertificatePage() {
   if (!certificate) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Certificate not found</p>
+        <p className="text-muted">Certificate not found</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-base py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">Your Certificate</h1>
+        <h1 className="text-2xl font-bold text-white mb-6 text-center">Your Certificate</h1>
 
         {/* Certificate Preview */}
-        <div className="bg-white rounded-xl shadow-lg border-4 border-indigo-600 p-2 mb-8">
+        <div className="bg-surface rounded-xl shadow-lg border-4 border-accent p-2 mb-8">
           <div className="border-2 border-indigo-200 rounded-lg p-8 sm:p-12">
             {/* Gradient Header */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg p-6 mb-8 text-center">
@@ -81,20 +81,20 @@ export default function CertificatePage() {
             </div>
 
             <div className="text-center space-y-6">
-              <p className="text-gray-500 text-lg">This certifies that</p>
+              <p className="text-muted text-lg">This certifies that</p>
 
-              <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 font-serif">
+              <h3 className="text-3xl sm:text-4xl font-bold text-white font-serif">
                 {certificate.userName}
               </h3>
 
-              <p className="text-gray-500 text-lg">has successfully completed</p>
+              <p className="text-muted text-lg">has successfully completed</p>
 
-              <h4 className="text-xl sm:text-2xl font-semibold text-indigo-600">
+              <h4 className="text-xl sm:text-2xl font-semibold text-accent">
                 {certificate.courseName}
               </h4>
 
-              <div className="pt-6 border-t border-gray-200">
-                <p className="text-sm text-gray-400">
+              <div className="pt-6 border-t border-border">
+                <p className="text-sm text-muted">
                   Issued on{' '}
                   {new Date(certificate.issuedAt).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -102,7 +102,7 @@ export default function CertificatePage() {
                     day: 'numeric',
                   })}
                 </p>
-                <p className="text-xs text-gray-300 mt-1">
+                <p className="text-xs text-muted mt-1">
                   Certificate ID: {certificate._id}
                 </p>
               </div>
@@ -121,7 +121,7 @@ export default function CertificatePage() {
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-8 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors disabled:opacity-50"
           >
             {downloading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />

@@ -10,6 +10,11 @@ export const getProgress = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: { percentage: 0, visitedSubtopics: [], lastVisitedTopic: 0, lastVisitedSubtopic: 0, totalTimeSpent: 0 } });
+      return;
+    }
+
     const user = req.user!;
 
     const progress = await CourseProgress.findOne({
@@ -43,6 +48,11 @@ export const updateProgress = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      res.status(200).json({ success: true, data: { percentage: 0, visitedSubtopics: req.body.visitedSubtopics || [] } });
+      return;
+    }
+
     const user = req.user!;
     const { courseId } = req.params;
     const { visitedSubtopics, lastVisitedTopic, lastVisitedSubtopic, timeSpent } = req.body;

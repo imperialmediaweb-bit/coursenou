@@ -196,13 +196,13 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/register"
-                className="inline-flex items-center justify-center px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-lg shadow-lg hover:bg-indigo-50 transition-colors text-lg"
+                className="inline-flex items-center justify-center px-8 py-3.5 bg-surface text-accent-glow font-semibold rounded-lg shadow-lg hover:bg-accent/10 transition-colors text-lg"
               >
                 Get Started Free
               </Link>
               <Link
                 to="/pricing"
-                className="inline-flex items-center justify-center px-8 py-3.5 border-2 border-white text-white font-semibold rounded-lg hover:bg-white/10 transition-colors text-lg"
+                className="inline-flex items-center justify-center px-8 py-3.5 border-2 border-white text-white font-semibold rounded-lg hover:bg-surface/10 transition-colors text-lg"
               >
                 View Pricing
               </Link>
@@ -212,13 +212,13 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-base">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Everything You Need to Create & Learn
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-prose max-w-2xl mx-auto">
               CourseBit combines cutting-edge AI with powerful learning tools to
               deliver a complete course creation experience.
             </p>
@@ -227,15 +227,15 @@ export default function Home() {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-gray-100"
+                className="bg-surface rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow border border-border"
               >
-                <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <feature.icon className="w-6 h-6 text-indigo-600" />
+                <div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+                  <feature.icon className="w-6 h-6 text-accent" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                <h3 className="text-xl font-semibold text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <p className="text-prose">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -243,13 +243,13 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               How It Works
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-prose">
               Three simple steps to create your AI-powered course.
             </p>
           </div>
@@ -259,10 +259,10 @@ export default function Home() {
                 <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                <h3 className="text-xl font-semibold text-white mb-3">
                   {step.title}
                 </h3>
-                <p className="text-gray-600">{step.description}</p>
+                <p className="text-prose">{step.description}</p>
               </div>
             ))}
           </div>
@@ -270,13 +270,13 @@ export default function Home() {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gray-50" id="pricing">
+      <section className="py-20 bg-base" id="pricing">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Simple, Transparent Pricing
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-prose">
               Start free and upgrade as you grow. Save 33% with yearly billing.
             </p>
           </div>
@@ -284,29 +284,29 @@ export default function Home() {
             {plans.map((plan) => (
               <div
                 key={plan.name}
-                className={`bg-white rounded-xl shadow-sm border-2 p-8 relative ${
+                className={`bg-surface rounded-xl shadow-sm border-2 p-8 relative ${
                   plan.badge
-                    ? 'border-indigo-600 shadow-md'
-                    : 'border-gray-100'
+                    ? 'border-accent shadow-md'
+                    : 'border-border'
                 }`}
               >
                 {plan.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-indigo-600 text-white text-sm font-semibold px-4 py-1 rounded-full">
+                    <span className="bg-accent text-white text-sm font-semibold px-4 py-1 rounded-full">
                       {plan.badge}
                     </span>
                   </div>
                 )}
                 <div className="text-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-xl font-semibold text-white mb-2">
                     {plan.name}
                   </h3>
                   <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-gray-900">
+                    <span className="text-4xl font-bold text-white">
                       {plan.price}
                     </span>
                     {plan.period && (
-                      <span className="text-gray-500 ml-1">{plan.period}</span>
+                      <span className="text-muted ml-1">{plan.period}</span>
                     )}
                   </div>
                   {plan.name === 'Yearly' && (
@@ -321,11 +321,11 @@ export default function Home() {
                       {f.included ? (
                         <HiCheck className="w-5 h-5 text-green-500 flex-shrink-0" />
                       ) : (
-                        <HiXMark className="w-5 h-5 text-gray-300 flex-shrink-0" />
+                        <HiXMark className="w-5 h-5 text-muted flex-shrink-0" />
                       )}
                       <span
                         className={
-                          f.included ? 'text-gray-700' : 'text-gray-400'
+                          f.included ? 'text-prose' : 'text-muted'
                         }
                       >
                         {f.text}
@@ -337,8 +337,8 @@ export default function Home() {
                   to="/register"
                   className={`block w-full text-center py-3 rounded-lg font-semibold transition-colors ${
                     plan.badge
-                      ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      ? 'bg-accent text-white hover:bg-accent-glow'
+                      : 'bg-surface text-white hover:bg-border'
                   }`}
                 >
                   Get Started
@@ -350,13 +350,13 @@ export default function Home() {
       </section>
 
       {/* Testimonials */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Loved by Learners & Educators
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-prose">
               See what our users have to say about CourseBit.
             </p>
           </div>
@@ -364,18 +364,18 @@ export default function Home() {
             {testimonials.map((t) => (
               <div
                 key={t.name}
-                className="bg-gray-50 rounded-xl p-6 border border-gray-100"
+                className="bg-base rounded-xl p-6 border border-border"
               >
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center text-white font-semibold">
                     {t.initials}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">{t.name}</p>
-                    <p className="text-sm text-gray-500">{t.role}</p>
+                    <p className="font-semibold text-white">{t.name}</p>
+                    <p className="text-sm text-muted">{t.role}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 italic">&ldquo;{t.quote}&rdquo;</p>
+                <p className="text-prose italic">&ldquo;{t.quote}&rdquo;</p>
               </div>
             ))}
           </div>
@@ -383,13 +383,13 @@ export default function Home() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-20 bg-base">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Frequently Asked Questions
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-prose">
               Got questions? We have answers.
             </p>
           </div>
@@ -397,24 +397,24 @@ export default function Home() {
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
+                className="bg-surface rounded-xl border border-border shadow-sm overflow-hidden"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                   className="w-full flex items-center justify-between px-6 py-4 text-left"
                 >
-                  <span className="font-semibold text-gray-900">
+                  <span className="font-semibold text-white">
                     {faq.question}
                   </span>
                   <HiChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${
+                    className={`w-5 h-5 text-muted transition-transform ${
                       openFaq === idx ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
                 {openFaq === idx && (
                   <div className="px-6 pb-4">
-                    <p className="text-gray-600">{faq.answer}</p>
+                    <p className="text-prose">{faq.answer}</p>
                   </div>
                 )}
               </div>
@@ -435,7 +435,7 @@ export default function Home() {
           </p>
           <Link
             to="/register"
-            className="inline-flex items-center justify-center px-8 py-3.5 bg-white text-indigo-700 font-semibold rounded-lg shadow-lg hover:bg-indigo-50 transition-colors text-lg"
+            className="inline-flex items-center justify-center px-8 py-3.5 bg-surface text-accent-glow font-semibold rounded-lg shadow-lg hover:bg-accent/10 transition-colors text-lg"
           >
             Get Started Free
           </Link>

@@ -31,18 +31,18 @@ export default function SharedCourse() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center bg-base">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
 
   if (notFound || !course) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-base">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Course Not Found</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-4">Course Not Found</h1>
+          <p className="text-prose">
             This shared course link is invalid or has been removed.
           </p>
         </div>
@@ -67,16 +67,16 @@ export default function SharedCourse() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-base">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-surface border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-indigo-600 font-medium mb-1">
+              <p className="text-sm text-accent font-medium mb-1">
                 Shared Course
               </p>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              <h1 className="text-xl md:text-2xl font-bold text-white">
                 {course.title}
               </h1>
             </div>
@@ -100,9 +100,9 @@ export default function SharedCourse() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="lg:w-80 flex-shrink-0">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-6">
-              <div className="px-4 py-3 bg-gray-50 border-b border-gray-100">
-                <h2 className="font-semibold text-gray-900 text-sm">
+            <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden sticky top-6">
+              <div className="px-4 py-3 bg-base border-b border-border">
+                <h2 className="font-semibold text-white text-sm">
                   Course Topics
                 </h2>
               </div>
@@ -116,11 +116,11 @@ export default function SharedCourse() {
                     }}
                     className={`w-full text-left px-4 py-3 text-sm font-medium border-b border-gray-50 transition-colors ${
                       activeTopicIndex === tIdx
-                        ? 'bg-indigo-50 text-indigo-700 border-l-4 border-l-indigo-600'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-accent/10 text-accent-glow border-l-4 border-l-indigo-600'
+                        : 'text-prose hover:bg-base'
                     }`}
                   >
-                    <span className="text-xs text-gray-400 mr-2">
+                    <span className="text-xs text-muted mr-2">
                       {tIdx + 1}.
                     </span>
                     {topic.title}
@@ -134,18 +134,18 @@ export default function SharedCourse() {
           <div className="flex-1 min-w-0">
             {activeTopic ? (
               <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:p-8">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <div className="bg-surface rounded-xl shadow-sm border border-border p-6 md:p-8">
+                  <h2 className="text-2xl font-bold text-white mb-2">
                     {activeTopic.title}
                   </h2>
-                  <p className="text-sm text-gray-500 mb-8">
+                  <p className="text-sm text-muted mb-8">
                     Topic {activeTopicIndex + 1} of {course.topics.length} &middot; {activeTopic.subtopics.length} subtopic{activeTopic.subtopics.length !== 1 ? 's' : ''}
                   </p>
 
                   <div className="space-y-10">
                     {activeTopic.subtopics.map((subtopic, sIdx) => (
                       <div key={sIdx} className="scroll-mt-6">
-                        <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                        <h3 className="text-xl font-semibold text-white mb-4">
                           {subtopic.title}
                         </h3>
 
@@ -160,13 +160,13 @@ export default function SharedCourse() {
                         )}
 
                         <div className="prose prose-lg prose-indigo max-w-none">
-                          <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                          <p className="text-prose leading-relaxed whitespace-pre-wrap">
                             {subtopic.content}
                           </p>
                         </div>
 
                         {sIdx < activeTopic.subtopics.length - 1 && (
-                          <hr className="mt-10 border-gray-100" />
+                          <hr className="mt-10 border-border" />
                         )}
                       </div>
                     ))}
@@ -174,29 +174,29 @@ export default function SharedCourse() {
                 </div>
 
                 {/* Navigation */}
-                <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center justify-between bg-surface rounded-xl shadow-sm border border-border p-4">
                   <button
                     onClick={goToPreviousTopic}
                     disabled={activeTopicIndex === 0}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-prose bg-surface rounded-lg hover:bg-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     &larr; Previous
                   </button>
-                  <span className="text-sm text-gray-500">
+                  <span className="text-sm text-muted">
                     Topic {activeTopicIndex + 1} of {course.topics.length}
                   </span>
                   <button
                     onClick={goToNextTopic}
                     disabled={activeTopicIndex === course.topics.length - 1}
-                    className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Next &rarr;
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center py-12">
-                <p className="text-gray-500">
+              <div className="bg-surface rounded-xl shadow-sm border border-border p-6 text-center py-12">
+                <p className="text-muted">
                   Select a topic from the sidebar to begin reading.
                 </p>
               </div>
@@ -206,9 +206,9 @@ export default function SharedCourse() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 bg-white mt-auto">
+      <footer className="border-t border-border bg-surface mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-muted">
             Generated with CourseBit - AI Course Generator
           </p>
         </div>

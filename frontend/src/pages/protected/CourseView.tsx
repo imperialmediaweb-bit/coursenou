@@ -87,8 +87,9 @@ export default function CourseView() {
   const fetchNotes = async () => {
     try {
       const res = await api.get(`/notes/${id}`);
-      if (res.data?.content) {
-        setNoteContent(res.data.content);
+      const nd = res.data.data || res.data;
+      if (nd?.content) {
+        setNoteContent(nd.content);
       }
     } catch {
       // No notes yet
@@ -98,14 +99,15 @@ export default function CourseView() {
   const fetchProgress = async () => {
     try {
       const res = await api.get(`/progress/${id}`);
-      setProgress(res.data);
-      if (res.data.visitedSubtopics) {
-        setVisitedSubtopics(new Set(res.data.visitedSubtopics));
+      const d = res.data.data || res.data;
+      setProgress(d);
+      if (d.visitedSubtopics) {
+        setVisitedSubtopics(new Set(d.visitedSubtopics));
       }
-      if (res.data.lastVisitedTopic !== undefined) {
-        setCurrentTopic(res.data.lastVisitedTopic);
-        setCurrentSubtopic(res.data.lastVisitedSubtopic);
-        setExpandedTopics(prev => new Set(prev).add(res.data.lastVisitedTopic));
+      if (d.lastVisitedTopic !== undefined) {
+        setCurrentTopic(d.lastVisitedTopic);
+        setCurrentSubtopic(d.lastVisitedSubtopic);
+        setExpandedTopics(prev => new Set(prev).add(d.lastVisitedTopic));
       }
     } catch {
       // No progress yet
@@ -115,9 +117,10 @@ export default function CourseView() {
   const fetchRating = async () => {
     try {
       const res = await api.get(`/ratings/${id}`);
-      if (res.data.userRating) setRatingValue(res.data.userRating.rating);
-      setAvgRating(res.data.averageRating || 0);
-      setTotalRatings(res.data.totalRatings || 0);
+      const d = res.data.data || res.data;
+      if (d.userRating) setRatingValue(d.userRating.rating);
+      setAvgRating(d.averageRating || 0);
+      setTotalRatings(d.totalRatings || 0);
     } catch {
       // No ratings
     }
@@ -158,7 +161,8 @@ export default function CourseView() {
     setSummaryOpen(true);
     try {
       const res = await api.post(`/summary/${id}`);
-      setSummaryText(res.data.summary);
+      const sd = res.data.data || res.data;
+      setSummaryText(sd.summary || sd);
     } catch {
       toast.error('Failed to generate summary');
     } finally {
@@ -171,7 +175,8 @@ export default function CourseView() {
     try {
       const res = await api.post(`/duplicate/${id}`);
       toast.success('Course duplicated!');
-      navigate(`/course/${res.data._id}`);
+      const dd = res.data.data || res.data;
+      navigate(`/course/${dd._id}`);
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to duplicate');
     } finally {
@@ -342,7 +347,7 @@ export default function CourseView() {
       const res = await api.post(`/chat/${id}`, { message: userMessage });
       setChatMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: res.data.reply || res.data.message },
+        { role: 'assistant', content: res.data.data?.response || res.data.response || res.data.reply || res.data.message || 'No response' },
       ]);
     } catch {
       setChatMessages((prev) => [

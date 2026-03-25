@@ -30,21 +30,21 @@ export default function BlogPost() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center bg-base">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
 
   if (notFound || !blog) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-base">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Post Not Found</h1>
-          <p className="text-gray-600 mb-6">The blog post you are looking for does not exist.</p>
+          <h1 className="text-3xl font-bold text-white mb-4">Post Not Found</h1>
+          <p className="text-prose mb-6">The blog post you are looking for does not exist.</p>
           <Link
             to="/blog"
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-accent hover:text-accent-glow font-medium"
           >
             Back to Blog
           </Link>
@@ -54,11 +54,11 @@ export default function BlogPost() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16">
+    <div className="min-h-screen bg-base py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <Link
           to="/blog"
-          className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium mb-8"
+          className="inline-flex items-center text-accent hover:text-accent-glow font-medium mb-8"
         >
           &larr; Back to Blog
         </Link>
@@ -73,7 +73,7 @@ export default function BlogPost() {
           </div>
         )}
 
-        <p className="text-sm text-indigo-600 font-medium mb-3">
+        <p className="text-sm text-accent font-medium mb-3">
           {new Date(blog.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -81,7 +81,7 @@ export default function BlogPost() {
           })}
         </p>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-8">
           {blog.title}
         </h1>
 

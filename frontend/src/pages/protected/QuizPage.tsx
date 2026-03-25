@@ -103,7 +103,7 @@ export default function QuizPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
@@ -111,7 +111,7 @@ export default function QuizPage() {
   if (!quiz) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Quiz not available</p>
+        <p className="text-muted">Quiz not available</p>
       </div>
     );
   }
@@ -119,9 +119,9 @@ export default function QuizPage() {
   // Results screen
   if (submitted && score !== null) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-base py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center mb-8">
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-8 text-center mb-8">
             <div
               className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4 ${
                 passed ? 'bg-green-100' : 'bg-red-100'
@@ -133,14 +133,14 @@ export default function QuizPage() {
                 <HiOutlineXCircle className="h-10 w-10 text-red-600" />
               )}
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               {passed ? 'Congratulations!' : 'Keep Learning!'}
             </h2>
-            <p className="text-gray-500 mb-4">
-              You scored <span className="font-bold text-gray-900">{score}%</span>
+            <p className="text-muted mb-4">
+              You scored <span className="font-bold text-white">{score}%</span>
               {passed ? ' - You passed!' : ' - You need 70% to pass.'}
             </p>
-            <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+            <div className="w-full bg-border rounded-full h-3 mb-6">
               <div
                 className={`h-3 rounded-full transition-all duration-500 ${
                   passed ? 'bg-green-500' : 'bg-red-500'
@@ -152,7 +152,7 @@ export default function QuizPage() {
               {passed && certificateId && (
                 <Link
                   to={`/certificate/${certificateId}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors"
                 >
                   <HiOutlineAcademicCap className="h-5 w-5" />
                   Get Certificate
@@ -160,14 +160,14 @@ export default function QuizPage() {
               )}
               <button
                 onClick={handleRetake}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-border text-prose rounded-lg font-medium hover:bg-base transition-colors"
               >
                 <HiOutlineRefresh className="h-5 w-5" />
                 Retake Quiz
               </button>
               <Link
                 to={`/course/${id}`}
-                className="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-border text-prose rounded-lg font-medium hover:bg-base transition-colors"
               >
                 <HiOutlineArrowLeft className="h-5 w-5" />
                 Back to Course
@@ -177,14 +177,14 @@ export default function QuizPage() {
 
           {/* Answer Review */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Review Answers</h3>
+            <h3 className="text-lg font-semibold text-white">Review Answers</h3>
             {quiz.questions.map((q, qIndex) => {
               const userAnswer = selectedAnswers[qIndex];
               const isCorrect = userAnswer === q.correctAnswer;
               return (
                 <div
                   key={qIndex}
-                  className={`bg-white rounded-xl border p-6 ${
+                  className={`bg-surface rounded-xl border p-6 ${
                     isCorrect ? 'border-green-200' : 'border-red-200'
                   }`}
                 >
@@ -194,7 +194,7 @@ export default function QuizPage() {
                     ) : (
                       <HiOutlineXCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
                     )}
-                    <p className="font-medium text-gray-900">{q.question}</p>
+                    <p className="font-medium text-white">{q.question}</p>
                   </div>
                   <div className="ml-8 space-y-2 mb-3">
                     {q.options.map((opt, oIndex) => (
@@ -205,14 +205,14 @@ export default function QuizPage() {
                             ? 'bg-green-50 text-green-700 border border-green-200'
                             : oIndex === userAnswer && !isCorrect
                             ? 'bg-red-50 text-red-700 border border-red-200'
-                            : 'bg-gray-50 text-gray-600'
+                            : 'bg-base text-prose'
                         }`}
                       >
                         {opt}
                       </div>
                     ))}
                   </div>
-                  <p className="ml-8 text-sm text-gray-500 italic">{q.explanation}</p>
+                  <p className="ml-8 text-sm text-muted italic">{q.explanation}</p>
                 </div>
               );
             })}
@@ -227,11 +227,11 @@ export default function QuizPage() {
   const isLastQuestion = currentQuestion === quiz.questions.length - 1;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-base py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-6">
-          <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
+          <div className="flex items-center justify-between text-sm text-muted mb-2">
             <span>
               Question {currentQuestion + 1} of {quiz.questions.length}
             </span>
@@ -239,9 +239,9 @@ export default function QuizPage() {
               {Math.round(((currentQuestion + 1) / quiz.questions.length) * 100)}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-border rounded-full h-2">
             <div
-              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              className="bg-accent h-2 rounded-full transition-all duration-300"
               style={{
                 width: `${((currentQuestion + 1) / quiz.questions.length) * 100}%`,
               }}
@@ -250,8 +250,8 @@ export default function QuizPage() {
         </div>
 
         {/* Question Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">{question.question}</h2>
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
+          <h2 className="text-xl font-semibold text-white mb-6">{question.question}</h2>
 
           <div className="space-y-3 mb-8">
             {question.options.map((option, oIndex) => (
@@ -260,16 +260,16 @@ export default function QuizPage() {
                 onClick={() => handleSelectAnswer(currentQuestion, oIndex)}
                 className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${
                   selectedAnswers[currentQuestion] === oIndex
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                    ? 'border-accent bg-accent/10 text-accent-glow'
+                    : 'border-border hover:border-border text-prose'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <span
                     className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                       selectedAnswers[currentQuestion] === oIndex
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-100 text-gray-500'
+                        ? 'bg-accent text-white'
+                        : 'bg-surface text-muted'
                     }`}
                   >
                     {String.fromCharCode(65 + oIndex)}
@@ -284,7 +284,7 @@ export default function QuizPage() {
             <button
               onClick={() => setCurrentQuestion((prev) => Math.max(0, prev - 1))}
               disabled={currentQuestion === 0}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
@@ -292,7 +292,7 @@ export default function QuizPage() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-glow transition-colors disabled:opacity-50"
               >
                 {submitting ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -305,7 +305,7 @@ export default function QuizPage() {
               <button
                 onClick={() => setCurrentQuestion((prev) => prev + 1)}
                 disabled={selectedAnswers[currentQuestion] === undefined}
-                className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 px-6 py-2.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
                 <HiOutlineChevronRight className="h-4 w-4" />

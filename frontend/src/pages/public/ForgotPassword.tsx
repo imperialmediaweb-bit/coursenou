@@ -27,16 +27,16 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-base py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Forgot Password</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-3xl font-bold text-white">Forgot Password</h1>
+          <p className="mt-2 text-prose">
             Enter your email and we will send you a reset link
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
           {sent ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -54,16 +54,16 @@ export default function ForgotPassword() {
                   />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              <h2 className="text-xl font-semibold text-white mb-2">
                 Check Your Email
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-prose mb-6">
                 Check your email for reset link. If you do not see it, check
                 your spam folder.
               </p>
               <Link
                 to="/login"
-                className="text-indigo-600 hover:text-indigo-700 font-medium"
+                className="text-accent hover:text-accent-glow font-medium"
               >
                 Back to login
               </Link>
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
                 <div>
                   <label
                     htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-1"
+                    className="block text-sm font-medium text-prose mb-1"
                   >
                     Email Address
                   </label>
@@ -83,7 +83,7 @@ export default function ForgotPassword() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                    className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors"
                     placeholder="you@example.com"
                     required
                   />
@@ -92,17 +92,17 @@ export default function ForgotPassword() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-2.5 bg-accent text-white font-semibold rounded-lg hover:bg-accent-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </form>
 
-              <p className="mt-6 text-center text-sm text-gray-600">
+              <p className="mt-6 text-center text-sm text-prose">
                 Remember your password?{' '}
                 <Link
                   to="/login"
-                  className="text-indigo-600 hover:text-indigo-700 font-medium"
+                  className="text-accent hover:text-accent-glow font-medium"
                 >
                   Sign in
                 </Link>

@@ -129,7 +129,7 @@ export default function FlashcardsPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
@@ -137,28 +137,28 @@ export default function FlashcardsPage() {
   // Empty state - no flashcards generated yet
   if (!flashcard || !flashcard.cards || flashcard.cards.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-base py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <Link
             to={`/course/${courseId}`}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 mb-8 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted hover:text-prose mb-8 transition-colors"
           >
             <HiOutlineArrowLeft className="h-4 w-4" />
             Back to Course
           </Link>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="mx-auto w-20 h-20 rounded-full bg-indigo-50 flex items-center justify-center mb-6">
-              <HiOutlineLightningBolt className="h-10 w-10 text-indigo-600" />
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-12 text-center">
+            <div className="mx-auto w-20 h-20 rounded-full bg-accent/10 flex items-center justify-center mb-6">
+              <HiOutlineLightningBolt className="h-10 w-10 text-accent" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">No Flashcards Yet</h2>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold text-white mb-3">No Flashcards Yet</h2>
+            <p className="text-muted mb-8 max-w-md mx-auto">
               Generate flashcards from your course content to boost your memory with spaced
               repetition learning.
             </p>
             <button
               onClick={handleGenerate}
               disabled={generating}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors disabled:opacity-50"
             >
               {generating ? (
                 <>
@@ -182,13 +182,13 @@ export default function FlashcardsPage() {
   const cardIsDue = isDueForReview(currentCard);
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-base py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Link
             to={`/course/${courseId}`}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted hover:text-prose transition-colors"
           >
             <HiOutlineArrowLeft className="h-4 w-4" />
             Back to Course
@@ -196,7 +196,7 @@ export default function FlashcardsPage() {
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-2 text-sm text-muted hover:text-prose transition-colors disabled:opacity-50"
           >
             <HiOutlineRefresh className={`h-4 w-4 ${generating ? 'animate-spin' : ''}`} />
             Regenerate
@@ -205,21 +205,21 @@ export default function FlashcardsPage() {
 
         {/* Stats Bar */}
         <div className="grid grid-cols-4 gap-3 mb-6">
-          <div className="bg-white rounded-lg border border-gray-200 p-3 text-center">
-            <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            <p className="text-xs text-gray-500">Total</p>
+          <div className="bg-surface rounded-lg border border-border p-3 text-center">
+            <p className="text-2xl font-bold text-white">{stats.total}</p>
+            <p className="text-xs text-muted">Total</p>
           </div>
-          <div className="bg-white rounded-lg border border-green-200 p-3 text-center">
+          <div className="bg-surface rounded-lg border border-green-200 p-3 text-center">
             <p className="text-2xl font-bold text-green-600">{stats.mastered}</p>
-            <p className="text-xs text-gray-500">Mastered</p>
+            <p className="text-xs text-muted">Mastered</p>
           </div>
-          <div className="bg-white rounded-lg border border-yellow-200 p-3 text-center">
+          <div className="bg-surface rounded-lg border border-yellow-200 p-3 text-center">
             <p className="text-2xl font-bold text-yellow-600">{stats.learning}</p>
-            <p className="text-xs text-gray-500">Learning</p>
+            <p className="text-xs text-muted">Learning</p>
           </div>
-          <div className="bg-white rounded-lg border border-blue-200 p-3 text-center">
+          <div className="bg-surface rounded-lg border border-blue-200 p-3 text-center">
             <p className="text-2xl font-bold text-blue-600">{stats.newCards}</p>
-            <p className="text-xs text-gray-500">New</p>
+            <p className="text-xs text-muted">New</p>
           </div>
         </div>
 
@@ -235,7 +235,7 @@ export default function FlashcardsPage() {
         )}
 
         {/* Progress */}
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+        <div className="flex items-center justify-between text-sm text-muted mb-4">
           <span>
             Card {currentIndex + 1} of {flashcard.cards.length}
           </span>
@@ -248,9 +248,9 @@ export default function FlashcardsPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-6">
+        <div className="w-full bg-border rounded-full h-2 mb-6">
           <div
-            className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+            className="bg-accent h-2 rounded-full transition-all duration-300"
             style={{
               width: `${((currentIndex + 1) / flashcard.cards.length) * 100}%`,
             }}
@@ -273,11 +273,11 @@ export default function FlashcardsPage() {
           >
             {/* Front */}
             <div
-              className="absolute inset-0 bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col items-center justify-center"
+              className="absolute inset-0 bg-surface rounded-2xl shadow-lg border border-border p-8 flex flex-col items-center justify-center"
               style={{ backfaceVisibility: 'hidden' }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                <span className="text-xs font-medium text-muted uppercase tracking-wide">
                   Question
                 </span>
                 {currentCard.correctCount > 3 && (
@@ -287,27 +287,27 @@ export default function FlashcardsPage() {
                   </span>
                 )}
               </div>
-              <p className="text-xl font-semibold text-gray-900 text-center leading-relaxed">
+              <p className="text-xl font-semibold text-white text-center leading-relaxed">
                 {currentCard.front}
               </p>
-              <p className="text-sm text-gray-400 mt-6">Click to reveal answer</p>
+              <p className="text-sm text-muted mt-6">Click to reveal answer</p>
             </div>
 
             {/* Back */}
             <div
-              className="absolute inset-0 bg-white rounded-2xl shadow-lg border border-gray-200 p-8 flex flex-col items-center justify-center"
+              className="absolute inset-0 bg-surface rounded-2xl shadow-lg border border-border p-8 flex flex-col items-center justify-center"
               style={{
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
               }}
             >
-              <span className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-4">
+              <span className="text-xs font-medium text-muted uppercase tracking-wide mb-4">
                 Answer
               </span>
-              <p className="text-xl font-semibold text-gray-900 text-center leading-relaxed">
+              <p className="text-xl font-semibold text-white text-center leading-relaxed">
                 {currentCard.back}
               </p>
-              <p className="text-sm text-gray-400 mt-6">Rate your recall below</p>
+              <p className="text-sm text-muted mt-6">Rate your recall below</p>
             </div>
           </div>
         </div>
@@ -353,7 +353,7 @@ export default function FlashcardsPage() {
           <button
             onClick={handlePrev}
             disabled={currentIndex === 0}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             <HiOutlineChevronLeft className="h-4 w-4" />
             Previous
@@ -361,7 +361,7 @@ export default function FlashcardsPage() {
           <button
             onClick={handleNext}
             disabled={currentIndex === flashcard.cards.length - 1}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-prose hover:bg-surface rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Next
             <HiOutlineChevronRight className="h-4 w-4" />

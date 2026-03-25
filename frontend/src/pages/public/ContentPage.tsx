@@ -51,38 +51,38 @@ export default function ContentPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center bg-base">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
       </div>
     );
   }
 
   if (notFound || !page) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-base">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Page Not Found</h1>
-          <p className="text-gray-600">The page you are looking for does not exist.</p>
+          <h1 className="text-3xl font-bold text-white mb-4">Page Not Found</h1>
+          <p className="text-prose">The page you are looking for does not exist.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-16">
+    <div className="min-h-screen bg-base py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-white mb-8">
           {slugToTitle[slug] || slug}
         </h1>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+        <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
           <div
             className="prose prose-lg prose-indigo max-w-none"
             dangerouslySetInnerHTML={{ __html: page.content }}
           />
         </div>
 
-        <p className="text-sm text-gray-400 mt-6 text-center">
+        <p className="text-sm text-muted mt-6 text-center">
           Last updated:{' '}
           {new Date(page.updatedAt).toLocaleDateString('en-US', {
             year: 'numeric',

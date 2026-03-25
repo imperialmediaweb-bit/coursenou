@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import Course from '../models/Course';
 import { PLAN_LIMITS } from '../utils/planLimits';
+import { getDemoCourse, storeDemoCourse } from '../utils/demoStore';
 
 export const duplicateCourse = async (
   req: AuthRequest,
@@ -12,6 +13,25 @@ export const duplicateCourse = async (
 ): Promise<void> => {
   try {
     const user = req.user!;
+
+    if (String(user._id) === 'demo-user-id-001' || req.params.courseId?.startsWith('demo-')) {
+      const demoCourse = getDemoCourse(req.params.courseId);
+      if (!demoCourse) {
+        throw new AppError('Course not found', 404);
+      }
+      const newId = `demo-course-${Date.now()}`;
+      const newCourse = {
+        ...demoCourse,
+        _id: newId,
+        title: `${demoCourse.title} (Copy)`,
+        shareToken: uuidv4(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      storeDemoCourse(newCourse);
+      res.status(201).json({ success: true, data: newCourse });
+      return;
+    }
 
     const course = await Course.findById(req.params.courseId);
     if (!course) {
