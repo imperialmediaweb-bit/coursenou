@@ -5,7 +5,7 @@ export interface User {
   role: 'user' | 'admin';
   plan: 'free' | 'monthly' | 'yearly';
   planExpiresAt: string | null;
-  aiProvider: 'gemini' | 'openai';
+  aiProvider: 'gemini' | 'openai' | 'claude';
   aiCreditsUsed: number;
   createdAt: string;
   updatedAt: string;

@@ -29,9 +29,11 @@ export default function LandingNavbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-0.5">
-              <span className="text-xl lg:text-2xl font-display font-bold text-white">Coursbit</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-accent mt-auto mb-1.5" />
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-glow flex items-center justify-center">
+                <span className="text-white font-sans font-bold text-sm">C</span>
+              </div>
+              <span className="text-lg font-sans font-bold text-white tracking-tight">Coursbit</span>
             </Link>
 
             {/* Desktop nav links centered */}

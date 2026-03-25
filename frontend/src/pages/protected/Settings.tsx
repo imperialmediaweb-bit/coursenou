@@ -25,7 +25,7 @@ export default function Settings() {
   const [savingPassword, setSavingPassword] = useState(false);
 
   // AI Provider
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai'>(user?.aiProvider || 'gemini');
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai' | 'claude'>(user?.aiProvider || 'gemini');
   const [savingProvider, setSavingProvider] = useState(false);
 
   // Delete Account
@@ -277,6 +277,37 @@ export default function Settings() {
               <div>
                 <p className="font-medium text-gray-900">OpenAI</p>
                 <p className="text-sm text-gray-500">Advanced language models</p>
+              </div>
+            </label>
+
+            {/* Claude */}
+            <label
+              className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                aiProvider === 'claude'
+                  ? 'border-indigo-600 bg-indigo-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="aiProvider"
+                value="claude"
+                checked={aiProvider === 'claude'}
+                onChange={(e) => setAiProvider(e.target.value as 'claude')}
+                className="sr-only"
+              />
+              <div
+                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                  aiProvider === 'claude' ? 'border-indigo-600' : 'border-gray-300'
+                }`}
+              >
+                {aiProvider === 'claude' && (
+                  <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-gray-900">Claude</p>
+                <p className="text-sm text-gray-500">Anthropic&apos;s intelligent assistant</p>
               </div>
             </label>
           </div>

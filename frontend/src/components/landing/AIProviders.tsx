@@ -35,6 +35,18 @@ const providers: ProviderCard[] = [
       'Perfect for pro users',
     ],
   },
+  {
+    name: 'Claude',
+    gradientFrom: 'from-orange-400',
+    gradientTo: 'to-amber-400',
+    subtitle: "Anthropic's intelligent assistant",
+    features: [
+      'Nuanced understanding',
+      'Long-form content',
+      'Safety focused',
+      'Excellent for education',
+    ],
+  },
 ];
 
 const cardVariants = {
@@ -70,7 +82,7 @@ export default function AIProviders() {
 
         <div
           ref={ref}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto"
         >
           {providers.map((provider, i) => (
             <motion.div

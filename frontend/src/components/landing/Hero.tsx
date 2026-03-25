@@ -138,54 +138,52 @@ const mockCardVariants = {
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-base">
+    <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-base">
       <GlowEffect />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 sm:pt-32 sm:pb-20 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-          {/* Left content */}
-          <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-16 sm:pt-36 sm:pb-20 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-center">
+          {/* Left content — 3 cols */}
+          <div className="lg:col-span-3 flex flex-col items-center lg:items-start text-center lg:text-left">
             {/* Badge */}
             <motion.div {...stagger(0)}>
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface border border-border text-xs sm:text-sm font-sans text-prose mb-6 sm:mb-8">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-border text-xs font-sans text-prose mb-6">
                 <span className="text-accent">&#10022;</span>
-                Powered by Gemini &amp; GPT-4o
+                AI-Powered Course Generation
               </span>
             </motion.div>
 
-            {/* Headline */}
+            {/* Headline — smaller, balanced */}
             <motion.h1
               {...stagger(0.1)}
-              className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-bold text-white leading-[1.08] tracking-tight mb-5 sm:mb-6"
+              className="text-4xl sm:text-5xl lg:text-[3.5rem] font-display font-extrabold text-white leading-[1.12] tracking-tight mb-5"
             >
-              Generate complete
-              <br />
+              Generate complete{' '}
               <span className="bg-gradient-to-r from-accent to-accent-glow bg-clip-text text-transparent">
                 AI courses
-              </span>
-              <br />
+              </span>{' '}
               in minutes, not months.
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
               {...stagger(0.2)}
-              className="text-base sm:text-lg font-sans text-prose max-w-xl lg:max-w-2xl mb-8 sm:mb-10 leading-relaxed"
+              className="text-base font-sans text-prose max-w-lg mb-8 leading-relaxed"
             >
-              Coursbit transforms your ideas into structured, engaging courses
-              with AI-generated lessons, quizzes, and multimedia -- ready to
-              publish and share in minutes.
+              Transform any topic into a structured, engaging course with
+              AI-generated lessons, quizzes, certificates, and multimedia —
+              ready to publish and share in minutes.
             </motion.p>
 
             {/* CTAs */}
             <motion.div
               {...stagger(0.3)}
-              className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 mb-10 sm:mb-12 w-full sm:w-auto"
+              className="flex flex-col sm:flex-row items-center gap-3 mb-8 w-full sm:w-auto"
             >
-              <Button variant="primary" size="lg" arrow href="/register">
+              <Button variant="primary" size="md" arrow href="/register">
                 Start for Free
               </Button>
-              <Button variant="ghost" size="lg" href="#how-it-works">
+              <Button variant="ghost" size="md" href="#how-it-works">
                 See how it works
                 <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
@@ -194,14 +192,13 @@ export default function Hero() {
             {/* Social proof */}
             <motion.div
               {...stagger(0.4)}
-              className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6"
+              className="flex flex-col sm:flex-row items-center gap-4"
             >
-              {/* Avatar stack */}
-              <div className="flex items-center -space-x-2.5">
+              <div className="flex items-center -space-x-2">
                 {AVATARS.map((av) => (
                   <div
                     key={av.initials}
-                    className={`w-9 h-9 rounded-full ${av.color} flex items-center justify-center text-xs font-sans font-bold text-white ring-2 ring-base`}
+                    className={`w-8 h-8 rounded-full ${av.color} flex items-center justify-center text-[10px] font-sans font-bold text-white ring-2 ring-base`}
                   >
                     {av.initials}
                   </div>
@@ -209,14 +206,14 @@ export default function Hero() {
               </div>
 
               <div className="flex flex-col items-center sm:items-start gap-0.5">
-                <span className="text-sm font-sans text-white font-medium">
+                <span className="text-sm font-sans text-white/80 font-medium">
                   Joined by 2,400+ creators
                 </span>
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className="w-3.5 h-3.5 fill-amber-400 text-amber-400"
+                      className="w-3 h-3 fill-amber-400 text-amber-400"
                     />
                   ))}
                   <span className="text-xs font-sans text-muted ml-1">
@@ -227,10 +224,10 @@ export default function Hero() {
             </motion.div>
           </div>
 
-          {/* Right: Mock UI card */}
+          {/* Right: Mock UI card — 2 cols */}
           <motion.div
             {...mockCardVariants}
-            className="flex justify-center lg:justify-end mt-8 lg:mt-0"
+            className="lg:col-span-2 flex justify-center lg:justify-end"
           >
             <MockCourseCard />
           </motion.div>

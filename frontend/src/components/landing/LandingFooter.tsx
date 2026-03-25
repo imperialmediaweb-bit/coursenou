@@ -66,11 +66,13 @@ export default function LandingFooter() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand column */}
           <div className="col-span-2 md:col-span-1">
-            <a href="/" className="inline-flex items-center gap-0">
-              <span className="font-display font-bold text-xl text-white">
+            <a href="/" className="inline-flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-accent to-accent-glow flex items-center justify-center">
+                <span className="text-white font-sans font-bold text-xs">C</span>
+              </div>
+              <span className="font-sans font-bold text-lg text-white tracking-tight">
                 Coursbit
               </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5 -mt-2" />
             </a>
             <p className="text-sm text-muted mt-3 max-w-xs leading-relaxed">
               AI-powered course generation for educators and creators.

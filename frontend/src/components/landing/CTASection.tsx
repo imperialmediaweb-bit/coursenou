@@ -63,8 +63,10 @@ export default function CTASection() {
           <span className="w-1 h-1 rounded-full bg-muted" />
           <span className="text-xs text-muted font-sans">GPT-4o</span>
           <span className="w-1 h-1 rounded-full bg-muted" />
+          <span className="text-xs text-muted font-sans">Claude</span>
+          <span className="w-1 h-1 rounded-full bg-muted" />
           <span className="text-xs text-muted font-sans">
-            Powered by the best AI
+            Powered by leading AI
           </span>
         </motion.div>
       </div>

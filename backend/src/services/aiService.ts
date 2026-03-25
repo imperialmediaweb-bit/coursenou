@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
-type AIProvider = 'gemini' | 'openai';
+type AIProvider = 'gemini' | 'openai' | 'claude';
 
 interface TopicResult {
   title: string;
@@ -65,10 +66,28 @@ class AIService {
     return response.choices[0]?.message?.content || '';
   }
 
+  private getClaude() {
+    return new Anthropic({ apiKey: process.env.CLAUDE_API_KEY! });
+  }
+
+  private async generateWithClaude(prompt: string): Promise<string> {
+    const client = this.getClaude();
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const block = message.content[0];
+    return block.type === 'text' ? block.text : '';
+  }
+
   private async generate(provider: AIProvider, prompt: string): Promise<string> {
     return this.callWithRetry(async () => {
       if (provider === 'gemini') {
         return this.generateWithGemini(prompt);
+      }
+      if (provider === 'claude') {
+        return this.generateWithClaude(prompt);
       }
       return this.generateWithOpenAI(prompt);
     });

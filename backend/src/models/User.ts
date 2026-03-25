@@ -12,7 +12,7 @@ export interface IUser extends Document {
   paypalSubscriptionId: string | null;
   razorpaySubscriptionId: string | null;
   paystackCustomerCode: string | null;
-  aiProvider: 'gemini' | 'openai';
+  aiProvider: 'gemini' | 'openai' | 'claude';
   aiCreditsUsed: number;
   refreshToken: string | null;
   resetPasswordToken: string | null;
@@ -34,7 +34,7 @@ const userSchema = new Schema<IUser>(
     paypalSubscriptionId: { type: String, default: null },
     razorpaySubscriptionId: { type: String, default: null },
     paystackCustomerCode: { type: String, default: null },
-    aiProvider: { type: String, enum: ['gemini', 'openai'], default: 'gemini' },
+    aiProvider: { type: String, enum: ['gemini', 'openai', 'claude'], default: 'gemini' },
     aiCreditsUsed: { type: Number, default: 0 },
     refreshToken: { type: String, default: null },
     resetPasswordToken: { type: String, default: null },
