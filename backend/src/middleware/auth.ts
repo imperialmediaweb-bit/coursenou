@@ -19,7 +19,26 @@ export const authMiddleware = async (
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const jwtSecret = process.env.JWT_SECRET || 'demo-jwt-secret-key-minimum-64-chars-for-security-purposes-here';
+    const decoded = jwt.verify(token, jwtSecret) as { userId: string };
+
+    // Demo user bypass — works without database
+    if (decoded.userId === 'demo-user-id-001') {
+      req.user = {
+        _id: 'demo-user-id-001',
+        name: 'Demo User',
+        email: 'demo@coursbit.com',
+        role: 'user',
+        plan: 'monthly',
+        planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        aiProvider: 'gemini',
+        aiCreditsUsed: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any;
+      next();
+      return;
+    }
 
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {

@@ -97,18 +97,29 @@ app.use(errorHandler);
 // Database connection and server start
 const PORT = process.env.PORT || 3001;
 
-mongoose
-  .connect(process.env.MONGODB_URI!)
-  .then(async () => {
-    console.log('Connected to MongoDB');
-    await seedDemoAccount();
-    app.listen(parseInt(PORT as string), '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err.message);
-    process.exit(1);
+// Start server — MongoDB is optional (demo mode works without it)
+const startServer = () => {
+  app.listen(parseInt(PORT as string), '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
   });
+};
+
+if (process.env.MONGODB_URI) {
+  mongoose
+    .connect(process.env.MONGODB_URI)
+    .then(async () => {
+      console.log('Connected to MongoDB');
+      await seedDemoAccount();
+      startServer();
+    })
+    .catch((err) => {
+      console.error('MongoDB connection failed:', err.message);
+      console.log('Starting in demo mode (no database)...');
+      startServer();
+    });
+} else {
+  console.log('No MONGODB_URI — starting in demo mode (no database)');
+  startServer();
+}
 
 export default app;

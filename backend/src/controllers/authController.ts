@@ -58,6 +58,45 @@ export const login = async (
       throw new AppError('Email and password are required', 400);
     }
 
+    // Demo account bypass — works without database
+    if (email === 'demo@coursbit.com' && password === 'demo123456') {
+      const demoUser = {
+        _id: 'demo-user-id-001',
+        name: 'Demo User',
+        email: 'demo@coursbit.com',
+        role: 'user' as const,
+        plan: 'monthly' as const,
+        planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        aiProvider: 'gemini' as const,
+        aiCreditsUsed: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const accessToken = jwt.sign(
+        { userId: demoUser._id },
+        process.env.JWT_SECRET || 'demo-jwt-secret-key-minimum-64-chars-for-security-purposes-here',
+        { expiresIn: '24h' as any }
+      );
+
+      const refreshToken = jwt.sign(
+        { userId: demoUser._id },
+        process.env.JWT_REFRESH_SECRET || 'demo-refresh-secret-key-minimum-64-chars-for-security-here',
+        { expiresIn: '30d' as any }
+      );
+
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'strict' as const,
+        path: '/',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({ accessToken, user: demoUser });
+      return;
+    }
+
     const user = await User.findOne({ email });
     if (!user) {
       throw new AppError('Invalid email or password', 401);
