@@ -6,9 +6,14 @@ import User from '../models/User';
 import { paymentService } from '../services/paymentService';
 import { emailService } from '../services/emailService';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-09-30.acacia' as any,
-});
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new AppError('Stripe is not configured', 503);
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2024-09-30.acacia' as any,
+  });
+};
 
 export const createCheckout = async (
   req: AuthRequest,
@@ -28,7 +33,7 @@ export const createCheckout = async (
 
     // Find or create Stripe customer
     if (!user.stripeCustomerId) {
-      const customer = await stripe.customers.create({
+      const customer = await getStripe().customers.create({
         email: user.email,
         name: user.name,
         metadata: { userId: user._id.toString() },
@@ -42,7 +47,7 @@ export const createCheckout = async (
         ? process.env.STRIPE_MONTHLY_PRICE_ID!
         : process.env.STRIPE_YEARLY_PRICE_ID!;
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripe().checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.FRONTEND_URL}/billing?success=true`,
@@ -69,7 +74,7 @@ export const webhook = async (
     const rawBody = req.body as Buffer;
     const sig = req.headers['stripe-signature'] as string;
 
-    const event = stripe.webhooks.constructEvent(
+    const event = getStripe().webhooks.constructEvent(
       rawBody,
       sig,
       process.env.STRIPE_WEBHOOK_SECRET!
@@ -139,7 +144,7 @@ export const cancelSubscription = async (
       throw new AppError('No active Stripe subscription found', 400);
     }
 
-    await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+    await getStripe().subscriptions.cancel(user.stripeSubscriptionId);
     await paymentService.cancelSubscription(user._id.toString(), 'stripe');
 
     res.status(200).json({ message: 'Subscription cancelled successfully' });
