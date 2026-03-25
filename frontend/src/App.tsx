@@ -63,11 +63,12 @@ const App = () => {
       <Routes>
         {/* Landing page - no layout wrapper, has its own navbar/footer */}
         <Route path="/" element={<Landing />} />
+        {/* Auth pages - standalone dark design, no layout */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         <Route element={<Layout />}>
           {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/blog" element={<BlogList />} />

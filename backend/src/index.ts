@@ -8,6 +8,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
+import { seedDemoAccount } from './utils/seed';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
@@ -95,8 +96,9 @@ const PORT = process.env.PORT || 3001;
 
 mongoose
   .connect(process.env.MONGODB_URI!)
-  .then(() => {
+  .then(async () => {
     console.log('Connected to MongoDB');
+    await seedDemoAccount();
     app.listen(parseInt(PORT as string), '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
