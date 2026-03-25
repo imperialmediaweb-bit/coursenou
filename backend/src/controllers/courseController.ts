@@ -19,7 +19,8 @@ const generateTopicsSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   language: z.string().min(1, 'Language is required'),
   numTopics: z.number().int().min(1).max(20),
-});
+  type: z.string().optional(),
+}).passthrough();
 
 const generateCourseSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),

@@ -78,11 +78,11 @@ export default function CreateCourse() {
         language,
         type: courseType,
       });
-      setTopics(res.data.topics || res.data);
+      const topicsData = res.data.data || res.data.topics || res.data;
+      setTopics(Array.isArray(topicsData) ? topicsData : []);
       setStep(2);
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to generate topics');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to generate topics');
     } finally {
       setLoadingTopics(false);
     }
@@ -99,11 +99,11 @@ export default function CreateCourse() {
         language,
         type: courseType,
       });
-      setCourseId(res.data._id || res.data.courseId);
+      const courseData = res.data.data || res.data;
+      setCourseId(courseData._id || courseData.courseId);
       setStep(4);
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || 'Failed to generate course');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to generate course');
       setStep(2);
     } finally {
       setGenerating(false);
@@ -145,7 +145,7 @@ export default function CreateCourse() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-base py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
         {/* Step Indicators */}
         <div className="mb-8">
@@ -155,8 +155,8 @@ export default function CreateCourse() {
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-semibold transition-colors ${
                     step >= s.num
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-200 text-gray-500'
+                      ? 'bg-accent text-white'
+                      : 'bg-border text-muted'
                   }`}
                 >
                   {step > s.num ? (
@@ -165,13 +165,13 @@ export default function CreateCourse() {
                     s.num
                   )}
                 </div>
-                <span className="ml-2 text-sm font-medium text-gray-600 hidden sm:inline">
+                <span className="ml-2 text-sm font-medium text-prose hidden sm:inline">
                   {s.label}
                 </span>
                 {i < steps.length - 1 && (
                   <div
                     className={`w-12 sm:w-20 h-0.5 mx-2 ${
-                      step > s.num ? 'bg-indigo-600' : 'bg-gray-200'
+                      step > s.num ? 'bg-accent' : 'bg-border'
                     }`}
                   />
                 )}
@@ -182,13 +182,13 @@ export default function CreateCourse() {
 
         {/* Step 1: Details */}
         {step === 1 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Create a New Course</h2>
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Create a New Course</h2>
 
             <div className="space-y-6">
               {/* Title */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-prose mb-1">
                   Course Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -196,13 +196,13 @@ export default function CreateCourse() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g., Introduction to Machine Learning"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors"
+                  className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors"
                 />
               </div>
 
               {/* Number of Topics */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-prose mb-1">
                   Number of Topics: {numTopics}
                 </label>
                 <input
@@ -211,9 +211,9 @@ export default function CreateCourse() {
                   max={maxTopics}
                   value={numTopics}
                   onChange={(e) => setNumTopics(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-indigo-600"
                 />
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <div className="flex justify-between text-xs text-muted mt-1">
                   <span>1</span>
                   <span>{maxTopics}</span>
                 </div>
@@ -226,7 +226,7 @@ export default function CreateCourse() {
 
               {/* Course Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-prose mb-2">
                   Course Type
                 </label>
                 <div className="grid grid-cols-2 gap-4">
@@ -235,14 +235,14 @@ export default function CreateCourse() {
                     onClick={() => setCourseType('image')}
                     className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
                       courseType === 'image'
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-indigo-600 bg-accent/10'
+                        : 'border-border hover:border-border'
                     }`}
                   >
-                    <HiOutlinePhotograph className="h-6 w-6 text-indigo-600" />
+                    <HiOutlinePhotograph className="h-6 w-6 text-accent" />
                     <div className="text-left">
-                      <p className="font-medium text-gray-900">Image</p>
-                      <p className="text-xs text-gray-500">With AI images</p>
+                      <p className="font-medium text-white">Image</p>
+                      <p className="text-xs text-muted">With AI images</p>
                     </div>
                   </button>
                   <button
@@ -256,17 +256,17 @@ export default function CreateCourse() {
                     }}
                     className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors relative ${
                       courseType === 'video'
-                        ? 'border-indigo-600 bg-indigo-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-indigo-600 bg-accent/10'
+                        : 'border-border hover:border-border'
                     } ${!isPaid ? 'opacity-60' : ''}`}
                   >
                     <HiOutlineVideoCamera className="h-6 w-6 text-purple-600" />
                     <div className="text-left">
-                      <p className="font-medium text-gray-900">Video</p>
-                      <p className="text-xs text-gray-500">With AI videos</p>
+                      <p className="font-medium text-white">Video</p>
+                      <p className="text-xs text-muted">With AI videos</p>
                     </div>
                     {!isPaid && (
-                      <HiOutlineLockClosed className="absolute top-2 right-2 h-4 w-4 text-gray-400" />
+                      <HiOutlineLockClosed className="absolute top-2 right-2 h-4 w-4 text-muted" />
                     )}
                   </button>
                 </div>
@@ -274,13 +274,13 @@ export default function CreateCourse() {
 
               {/* Language */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-prose mb-1">
                   Language
                 </label>
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors bg-white"
+                  className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors bg-surface"
                 >
                   {LANGUAGES.map((lang) => (
                     <option key={lang} value={lang}>
@@ -294,7 +294,7 @@ export default function CreateCourse() {
               <button
                 onClick={handleGenerateTopics}
                 disabled={loadingTopics || !title.trim()}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingTopics ? (
                   <>
@@ -314,17 +314,17 @@ export default function CreateCourse() {
 
         {/* Step 2: Topics Review */}
         {step === 2 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-8">
             <div className="flex items-center gap-3 mb-6">
               <button
                 onClick={() => setStep(1)}
-                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-lg hover:bg-surface transition-colors"
               >
-                <HiOutlineArrowLeft className="h-5 w-5 text-gray-600" />
+                <HiOutlineArrowLeft className="h-5 w-5 text-prose" />
               </button>
-              <h2 className="text-2xl font-bold text-gray-900">Review Topics</h2>
+              <h2 className="text-2xl font-bold text-white">Review Topics</h2>
             </div>
-            <p className="text-gray-500 mb-6">
+            <p className="text-muted mb-6">
               Edit, reorder, or remove topics before generating your course.
             </p>
 
@@ -332,23 +332,23 @@ export default function CreateCourse() {
               {topics.map((topic, tIndex) => (
                 <div
                   key={tIndex}
-                  className="border border-gray-200 rounded-lg p-4"
+                  className="border border-border rounded-lg p-4"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="flex-shrink-0 w-7 h-7 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                    <span className="flex-shrink-0 w-7 h-7 bg-accent/20 text-accent rounded-full flex items-center justify-center text-sm font-semibold">
                       {tIndex + 1}
                     </span>
                     <input
                       type="text"
                       value={topic.title}
                       onChange={(e) => updateTopicTitle(tIndex, e.target.value)}
-                      className="flex-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      className="flex-1 px-3 py-1.5 border border-border rounded-md text-sm focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none"
                     />
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => moveTopic(tIndex, 'up')}
                         disabled={tIndex === 0}
-                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                        className="p-1 rounded hover:bg-surface disabled:opacity-30"
                         title="Move up"
                       >
                         <HiOutlineChevronUp className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default function CreateCourse() {
                       <button
                         onClick={() => moveTopic(tIndex, 'down')}
                         disabled={tIndex === topics.length - 1}
-                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-30"
+                        className="p-1 rounded hover:bg-surface disabled:opacity-30"
                         title="Move down"
                       >
                         <HiOutlineChevronDown className="h-4 w-4" />
@@ -372,7 +372,7 @@ export default function CreateCourse() {
                   </div>
                   <ul className="ml-9 space-y-1">
                     {topic.subtopics.map((sub, sIndex) => (
-                      <li key={sIndex} className="text-sm text-gray-600 flex items-center gap-2">
+                      <li key={sIndex} className="text-sm text-prose flex items-center gap-2">
                         <span className="w-1.5 h-1.5 bg-gray-300 rounded-full flex-shrink-0" />
                         {sub}
                       </li>
@@ -384,7 +384,7 @@ export default function CreateCourse() {
 
             <button
               onClick={addTopic}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 transition-colors mb-6"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 border-2 border-dashed border-border rounded-lg text-sm text-muted hover:border-indigo-400 hover:text-accent transition-colors mb-6"
             >
               <HiOutlinePlus className="h-4 w-4" />
               Add Topic
@@ -392,7 +392,7 @@ export default function CreateCourse() {
 
             <button
               onClick={handleGenerateCourse}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors"
             >
               <HiOutlineSparkles className="h-5 w-5" />
               Generate Course
@@ -402,24 +402,24 @@ export default function CreateCourse() {
 
         {/* Step 3: Generating */}
         {step === 3 && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-12 text-center">
             <div className="mb-8">
               <div className="relative mx-auto w-20 h-20">
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-200" />
                 <div className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent animate-spin" />
-                <HiOutlineSparkles className="absolute inset-0 m-auto h-8 w-8 text-indigo-600" />
+                <HiOutlineSparkles className="absolute inset-0 m-auto h-8 w-8 text-accent" />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Generating Your Course
             </h2>
-            <p className="text-gray-500 mb-4">This may take a minute or two...</p>
-            <p className="text-indigo-600 font-medium animate-pulse">
+            <p className="text-muted mb-4">This may take a minute or two...</p>
+            <p className="text-accent font-medium animate-pulse">
               {STATUS_MESSAGES[statusIndex]}
             </p>
-            <div className="mt-8 w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div className="mt-8 w-full bg-border rounded-full h-2 overflow-hidden">
               <div
-                className="bg-indigo-600 h-2 rounded-full transition-all duration-1000"
+                className="bg-accent h-2 rounded-full transition-all duration-1000"
                 style={{
                   width: `${((statusIndex + 1) / STATUS_MESSAGES.length) * 100}%`,
                 }}
@@ -430,26 +430,26 @@ export default function CreateCourse() {
 
         {/* Step 4: Success */}
         {step === 4 && courseId && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <div className="bg-surface rounded-xl shadow-sm border border-border p-12 text-center">
             <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
               <HiOutlineCheckCircle className="h-10 w-10 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold text-white mb-2">
               Course Generated!
             </h2>
-            <p className="text-gray-500 mb-8">
+            <p className="text-muted mb-8">
               Your course has been created successfully. Start learning now!
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <button
                 onClick={() => navigate(`/course/${courseId}`)}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                className="px-8 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-glow transition-colors"
               >
                 View Course
               </button>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="px-8 py-3 border border-border text-prose rounded-lg font-medium hover:bg-base transition-colors"
               >
                 Go to Dashboard
               </button>
