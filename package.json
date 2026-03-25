@@ -1,0 +1,13 @@
+{
+  "name": "coursebit",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "cd backend && npm install && cd ../frontend && npm install",
+    "build": "cd backend && PUPPETEER_SKIP_DOWNLOAD=true npm run build && cd ../frontend && npm run build",
+    "start": "node start.js"
+  }
+}
