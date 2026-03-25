@@ -40,31 +40,30 @@ export default function Dashboard() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [coursesRes, certsRes] = await Promise.all([
-        api.get('/courses'),
-        api.get('/certificates'),
-      ]);
-      const coursesList = coursesRes.data.data || coursesRes.data || [];
+
+      let coursesList: Course[] = [];
+      let certificatesCount = 0;
+
+      try {
+        const coursesRes = await api.get('/courses');
+        coursesList = coursesRes.data?.data || coursesRes.data || [];
+      } catch {
+        coursesList = [];
+      }
+
+      try {
+        const certsRes = await api.get('/certificates');
+        certificatesCount = certsRes.data?.data?.length || certsRes.data?.length || 0;
+      } catch {
+        certificatesCount = 0;
+      }
+
       setCourses(coursesList);
       setStats({
         totalCourses: coursesList.length,
         completedCourses: coursesList.filter((c: Course) => c.isCompleted).length,
-        certificatesEarned: (certsRes.data?.length || certsRes.data?.data?.length || 0),
+        certificatesEarned: certificatesCount,
       });
-    } catch {
-      // Try just courses if certificates fails
-      try {
-        const coursesRes = await api.get('/courses');
-        const coursesList = coursesRes.data.data || coursesRes.data || [];
-        setCourses(coursesList);
-        setStats({
-          totalCourses: coursesList.length,
-          completedCourses: coursesList.filter((c: Course) => c.isCompleted).length,
-          certificatesEarned: 0,
-        });
-      } catch {
-        toast.error('Failed to load dashboard data');
-      }
     } finally {
       setLoading(false);
     }
@@ -109,40 +108,79 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#08080C' }}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-transparent" style={{ borderTopColor: '#6C47FF', borderRightColor: '#6C47FF' }} />
+          <p className="font-sans text-sm" style={{ color: '#A8A8C0' }}>Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
 
+  const statsConfig = [
+    {
+      label: 'Total Courses',
+      value: stats.totalCourses,
+      icon: HiOutlineBookOpen,
+      gradient: 'linear-gradient(135deg, rgba(108,71,255,0.12) 0%, rgba(108,71,255,0.04) 100%)',
+    },
+    {
+      label: 'Completed',
+      value: stats.completedCourses,
+      icon: HiOutlineCheckCircle,
+      gradient: 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.04) 100%)',
+    },
+    {
+      label: 'Certificates',
+      value: stats.certificatesEarned,
+      icon: HiOutlineAcademicCap,
+      gradient: 'linear-gradient(135deg, rgba(168,85,247,0.12) 0%, rgba(168,85,247,0.04) 100%)',
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen font-sans py-8 px-4 sm:px-6 lg:px-8" style={{ background: '#08080C' }}>
       <div className="max-w-7xl mx-auto">
+
         {/* Welcome Header */}
         <div className="mb-8 flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-3xl font-bold font-sans" style={{ color: '#F0F0FF' }}>
               Welcome back, {user?.name || 'there'}!
             </h1>
-            <p className="mt-1 text-gray-500">
-              Here&apos;s an overview of your learning journey on CourseBit.
+            <p className="mt-1 font-sans text-sm" style={{ color: '#A8A8C0' }}>
+              Here&apos;s an overview of your learning journey.
             </p>
           </div>
           <div className="flex items-center gap-3">
             {courses.length > 0 && (
               <button
                 onClick={handleBulkExport}
-                className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2.5 text-sm font-sans font-medium rounded-xl transition-all duration-200 hover:brightness-125"
+                style={{
+                  background: '#0F0F15',
+                  border: '1px solid #1C1C28',
+                  color: '#A8A8C0',
+                }}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
                 Export All
               </button>
             )}
             <Link
               to="/bookmarks"
-              className="flex items-center gap-2 px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-sans font-medium rounded-xl transition-all duration-200 hover:brightness-125"
+              style={{
+                background: '#0F0F15',
+                border: '1px solid #1C1C28',
+                color: '#A8A8C0',
+              }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
               Bookmarks
             </Link>
           </div>
@@ -150,9 +188,17 @@ export default function Dashboard() {
 
         {/* Smart Recommendations */}
         {courses.length > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-primary-100 dark:border-primary-800">
-            <h3 className="text-sm font-semibold text-primary-700 dark:text-primary-300 mb-3 flex items-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <div
+            className="mb-8 rounded-2xl p-6"
+            style={{
+              background: 'linear-gradient(135deg, rgba(108,71,255,0.15) 0%, rgba(108,71,255,0.05) 100%)',
+              border: '1px solid rgba(108,71,255,0.2)',
+            }}
+          >
+            <h3 className="text-sm font-semibold font-sans mb-3 flex items-center gap-2" style={{ color: '#6C47FF' }}>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
               Suggested Next Courses
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -167,9 +213,14 @@ export default function Dashboard() {
                   <Link
                     key={i}
                     to={`/create?title=${encodeURIComponent(s)}`}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-full text-sm text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-sans font-medium transition-all duration-200 hover:brightness-125"
+                    style={{
+                      background: '#0F0F15',
+                      border: '1px solid #1C1C28',
+                      color: '#F0F0FF',
+                    }}
                   >
-                    <HiOutlinePlus className="w-3 h-3" />
+                    <HiOutlinePlus className="w-3.5 h-3.5" style={{ color: '#6C47FF' }} />
                     {s}
                   </Link>
                 ));
@@ -180,46 +231,49 @@ export default function Dashboard() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <HiOutlineBookOpen className="h-6 w-6 text-indigo-600" />
+          {statsConfig.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-2xl p-6 flex items-center gap-4 transition-all duration-200 hover:brightness-110"
+              style={{
+                background: '#0F0F15',
+                border: '1px solid #1C1C28',
+              }}
+            >
+              <div
+                className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ background: stat.gradient }}
+              >
+                <stat.icon className="h-6 w-6" style={{ color: '#6C47FF' }} />
+              </div>
+              <div>
+                <p className="text-sm font-medium font-sans" style={{ color: '#3D3D52' }}>{stat.label}</p>
+                <p className="text-2xl font-bold font-sans" style={{ color: '#F0F0FF' }}>{stat.value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Total Courses</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalCourses}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <HiOutlineCheckCircle className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Completed</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.completedCourses}</p>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <HiOutlineAcademicCap className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Certificates</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.certificatesEarned}</p>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Course Grid */}
         {courses.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <HiOutlineCollection className="mx-auto h-16 w-16 text-gray-300" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">No courses yet</h3>
-            <p className="mt-2 text-gray-500">
-              Create your first AI course!
+          <div
+            className="rounded-2xl p-12 text-center"
+            style={{
+              background: '#0F0F15',
+              border: '1px solid #1C1C28',
+            }}
+          >
+            <HiOutlineCollection className="mx-auto h-16 w-16" style={{ color: '#3D3D52' }} />
+            <h3 className="mt-4 text-lg font-semibold font-sans" style={{ color: '#F0F0FF' }}>
+              No courses yet
+            </h3>
+            <p className="mt-2 font-sans text-sm" style={{ color: '#A8A8C0' }}>
+              Create your first AI-powered course and start learning today.
             </p>
             <Link
               to="/create"
-              className="mt-6 inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-xl font-sans font-medium text-white transition-all duration-200 hover:brightness-110"
+              style={{ background: '#6C47FF' }}
             >
               <HiOutlinePlus className="h-5 w-5" />
               Create Course
@@ -230,22 +284,26 @@ export default function Dashboard() {
             {courses.map((course) => (
               <div
                 key={course._id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                className="rounded-2xl overflow-hidden transition-all duration-200 hover:brightness-110"
+                style={{
+                  background: '#0F0F15',
+                  border: '1px solid #1C1C28',
+                }}
               >
                 <div
                   className="p-6 cursor-pointer"
                   onClick={() => navigate(`/course/${course._id}`)}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 flex-1">
+                    <h3 className="text-lg font-semibold font-sans line-clamp-2 flex-1" style={{ color: '#F0F0FF' }}>
                       {course.title}
                     </h3>
                     <span
-                      className={`ml-2 flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        course.type === 'video'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
+                      className="ml-2 flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-sans font-medium"
+                      style={{
+                        background: course.type === 'video' ? 'rgba(168,85,247,0.15)' : 'rgba(108,71,255,0.15)',
+                        color: course.type === 'video' ? '#a855f7' : '#6C47FF',
+                      }}
                     >
                       {course.type === 'video' ? (
                         <HiOutlineVideoCamera className="h-3 w-3" />
@@ -255,34 +313,37 @@ export default function Dashboard() {
                       {course.type === 'video' ? 'Video' : 'Image'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-2">
+                  <p className="text-sm font-sans mb-3" style={{ color: '#A8A8C0' }}>
                     {course.language} &middot; {course.topics.length} topic{course.topics.length !== 1 ? 's' : ''}
                   </p>
                   <div className="flex items-center justify-between">
                     <span
-                      className={`inline-flex items-center gap-1 text-xs font-medium ${
-                        course.isCompleted ? 'text-green-600' : 'text-yellow-600'
-                      }`}
+                      className="inline-flex items-center gap-1 text-xs font-sans font-medium"
+                      style={{ color: course.isCompleted ? '#22c55e' : '#eab308' }}
                     >
                       <HiOutlineCheckCircle className="h-4 w-4" />
                       {course.isCompleted ? 'Completed' : 'In Progress'}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs font-sans" style={{ color: '#3D3D52' }}>
                       {new Date(course.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
-                <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <div
+                  className="px-6 py-3 flex justify-end"
+                  style={{ borderTop: '1px solid #1C1C28' }}
+                >
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDelete(course._id);
                     }}
                     disabled={deletingId === course._id}
-                    className="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-700 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 text-sm font-sans transition-all duration-200 hover:brightness-125 disabled:opacity-50"
+                    style={{ color: '#ef4444' }}
                   >
                     {deletingId === course._id ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-transparent" style={{ borderTopColor: '#ef4444' }} />
                     ) : (
                       <HiOutlineTrash className="h-4 w-4" />
                     )}
@@ -298,7 +359,11 @@ export default function Dashboard() {
       {/* Floating Create Button */}
       <Link
         to="/create"
-        className="fixed bottom-8 right-8 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center z-50"
+        className="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg transition-all duration-200 hover:brightness-110 hover:scale-105 flex items-center justify-center z-50 text-white"
+        style={{
+          background: '#6C47FF',
+          boxShadow: '0 8px 32px rgba(108,71,255,0.4)',
+        }}
         title="Create Course"
       >
         <HiOutlinePlus className="h-7 w-7" />

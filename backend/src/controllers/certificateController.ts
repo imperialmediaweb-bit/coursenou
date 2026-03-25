@@ -10,6 +10,10 @@ export const getCertificates = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001') {
+      res.status(200).json({ success: true, data: [] });
+      return;
+    }
     const certificates = await Certificate.find({ userId: req.user!._id })
       .populate('courseId', 'title');
 

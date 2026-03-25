@@ -136,6 +136,11 @@ export const getCourses = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Demo user — return empty array (no DB)
+    if (String(req.user!._id) === 'demo-user-id-001') {
+      res.status(200).json({ success: true, data: [] });
+      return;
+    }
     const courses = await Course.find({ userId: req.user!._id }).sort({ createdAt: -1 });
     res.status(200).json({ success: true, data: courses });
   } catch (error) {
