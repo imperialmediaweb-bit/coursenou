@@ -6,6 +6,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 
 // Public pages
+const Landing = lazy(() => import('./pages/Landing'));
 const Home = lazy(() => import('./pages/public/Home'));
 const Login = lazy(() => import('./pages/public/Login'));
 const Register = lazy(() => import('./pages/public/Register'));
@@ -60,9 +61,11 @@ const App = () => {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
+        {/* Landing page - no layout wrapper, has its own navbar/footer */}
+        <Route path="/" element={<Landing />} />
+
         <Route element={<Layout />}>
           {/* Public Routes */}
-          <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />

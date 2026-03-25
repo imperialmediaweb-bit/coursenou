@@ -17,6 +17,47 @@ export default {
           800: '#3730a3',
           900: '#312e81',
         },
+        base: '#08080C',
+        surface: '#0F0F15',
+        border: '#1C1C28',
+        accent: '#6C47FF',
+        'accent-glow': '#8B6FFF',
+        muted: '#3D3D52',
+        prose: '#A8A8C0',
+        white: '#F0F0FF',
+      },
+      fontFamily: {
+        display: ['"Instrument Serif"', 'serif'],
+        sans: ['"DM Sans"', 'sans-serif'],
+      },
+      keyframes: {
+        marquee: {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        'pulse-glow': {
+          '0%, 100%': { opacity: '0.4' },
+          '50%': { opacity: '0.8' },
+        },
+        'typing-cursor': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
+        'progress-fill': {
+          '0%': { width: '0%' },
+          '100%': { width: '78%' },
+        },
+      },
+      animation: {
+        marquee: 'marquee 30s linear infinite',
+        float: 'float 6s ease-in-out infinite',
+        'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
+        'typing-cursor': 'typing-cursor 1s steps(1) infinite',
+        'progress-fill': 'progress-fill 2s ease-out forwards',
       },
     },
   },
