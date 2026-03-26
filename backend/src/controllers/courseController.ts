@@ -102,19 +102,33 @@ export const generateCourse = async (
       }
     }
 
-    const courseContent = await aiService.generateCourse(user.aiProvider, topics, type, language);
+    let courseContent;
+    try {
+      courseContent = await aiService.generateCourse(user.aiProvider, topics, type, language);
+    } catch (aiError: any) {
+      console.error('Course generation failed:', aiError.message);
+      throw new AppError('Failed to generate course content. Please try again.', 500);
+    }
 
     // Fetch images for each subtopic — include course title for relevance
     const topicsWithImages = await Promise.all(
       courseContent.map(async (topic) => ({
         title: topic.title,
         subtopics: await Promise.all(
-          topic.subtopics.map(async (subtopic) => ({
-            title: subtopic.title,
-            content: subtopic.content,
-            imageUrl: await imageService.searchImage(`${title} ${subtopic.title}`),
-            videoUrl: null,
-          }))
+          topic.subtopics.map(async (subtopic) => {
+            let imageUrl = null;
+            try {
+              imageUrl = await imageService.searchImage(`${title} ${subtopic.title}`);
+            } catch {
+              // Image fetch failed, continue without image
+            }
+            return {
+              title: subtopic.title,
+              content: subtopic.content,
+              imageUrl,
+              videoUrl: null,
+            };
+          })
         ),
       }))
     );
@@ -146,7 +160,7 @@ export const generateCourse = async (
         title,
         language,
         type,
-        topics: topicsWithImages,
+        topics: JSON.parse(JSON.stringify(topicsWithImages)),
         shareToken: uuidv4(),
       },
     });
