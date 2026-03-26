@@ -55,16 +55,13 @@ export const generateTopics = async (
 
     const topics = await aiService.generateTopics(user.aiProvider, title, language, numTopics);
 
-    if (String(user._id) !== 'demo-user-id-001') {
-      if (typeof user.save === "function") {
-        user.aiCreditsUsed += 1;
-        await user.save();
-      } else {
+    if (String(user._id || user.id) !== 'demo-user-id-001') {
+      try {
         await prisma.user.update({
-          where: { id: user._id },
+          where: { id: String(user._id || user.id) },
           data: { aiCreditsUsed: { increment: 1 } },
         });
-      }
+      } catch {}
     }
 
     res.status(200).json({ success: true, data: topics });
@@ -95,8 +92,8 @@ export const generateCourse = async (
       );
     }
 
-    if (limits.maxCourses !== Infinity && String(user._id) !== 'demo-user-id-001') {
-      const courseCount = await prisma.course.count({ where: { userId: user._id } });
+    if (limits.maxCourses !== Infinity && String(user._id || user.id) !== 'demo-user-id-001') {
+      const courseCount = await prisma.course.count({ where: { userId: String(user._id || user.id) } });
       if (courseCount >= limits.maxCourses) {
         throw new AppError(
           `Your ${user.plan} plan allows a maximum of ${limits.maxCourses} courses. Please upgrade for more.`,
@@ -123,10 +120,10 @@ export const generateCourse = async (
     );
 
     // Demo user — return course object without saving to DB
-    if (String(user._id) === 'demo-user-id-001') {
+    if (String(user._id || user.id) === 'demo-user-id-001') {
       const demoCourse = {
         _id: 'demo-course-' + Date.now(),
-        userId: user._id,
+        userId: String(user._id || user.id),
         title,
         language,
         type,
@@ -145,7 +142,7 @@ export const generateCourse = async (
 
     const course = await prisma.course.create({
       data: {
-        userId: user._id,
+        userId: String(user._id || user.id),
         title,
         language,
         type,
@@ -268,7 +265,7 @@ export const completeCourse = async (
 
     const certificate = await prisma.certificate.create({
       data: {
-        userId: user._id,
+        userId: String(user._id || user.id),
         courseId: course.id,
         courseName: course.title,
         userName: user.name,
