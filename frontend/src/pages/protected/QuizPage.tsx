@@ -32,18 +32,22 @@ export default function QuizPage() {
   const fetchQuiz = async () => {
     try {
       setLoading(true);
-      let res;
+      let quizData = null;
       try {
-        res = await api.get(`/quiz/${id}`);
+        const res = await api.get(`/quiz/${id}`);
+        quizData = res.data.data || res.data;
       } catch {
-        // Quiz doesn't exist, generate one
-        res = await api.post(`/quiz/generate/${id}`);
+        // Quiz doesn't exist
       }
-      setQuiz(res.data);
-      // If quiz was already completed, show results
-      if (res.data.score !== null && res.data.score !== undefined) {
-        setScore(res.data.score);
-        setPassed(res.data.passed);
+      // If no quiz or null, generate one
+      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+        const genRes = await api.post(`/quiz/generate/${id}`);
+        quizData = genRes.data.data || genRes.data;
+      }
+      setQuiz(quizData);
+      if (quizData?.score !== null && quizData?.score !== undefined) {
+        setScore(quizData.score);
+        setPassed(quizData.passed);
         setSubmitted(true);
       }
     } catch {
@@ -69,14 +73,15 @@ export default function QuizPage() {
     try {
       setSubmitting(true);
       const answers = quiz.questions.map((_, i) => selectedAnswers[i]);
-      const res = await api.post(`/quiz/${quiz._id}/submit`, { answers });
-      setScore(res.data.score);
-      setPassed(res.data.passed);
-      if (res.data.certificateId) {
-        setCertificateId(res.data.certificateId);
+      const res = await api.post(`/quiz/${id}/submit`, { answers });
+      const result = res.data.data || res.data;
+      setScore(result.score);
+      setPassed(result.passed);
+      if (result.certificateId) {
+        setCertificateId(result.certificateId);
       }
       setSubmitted(true);
-      if (res.data.passed) {
+      if (result.passed) {
         fireCelebration();
       }
       api.post('/gamification/xp', { action: res.data.passed ? 'QUIZ_PASSED' : 'QUIZ_FAILED' }).catch(() => {});

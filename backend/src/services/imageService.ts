@@ -7,9 +7,9 @@ class ImageService {
 
   async searchImage(query: string): Promise<string | null> {
     if (!this.accessKey) {
-      // Use Unsplash Source (no API key needed) — returns real photos
-      const cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(' ').slice(0, 3).join(',');
-      return `https://source.unsplash.com/800x450/?${encodeURIComponent(cleanQuery)}`;
+      // Use picsum.photos with deterministic seed from query
+      const seed = query.replace(/[^a-zA-Z0-9]/g, '').substring(0, 20).toLowerCase() || 'default';
+      return `https://picsum.photos/seed/${seed}/800/450`;
     }
 
     try {
