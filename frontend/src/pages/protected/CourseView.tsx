@@ -312,13 +312,21 @@ export default function CourseView() {
 
   const handleAudio = () => {
     if (!isPaid) {
-      toast.error('Audio requires a paid plan. Upgrade to unlock!');
+      toast.error('Audio requires a paid plan.');
       return;
     }
-    if (course?.audioUrl) {
-      window.open(course.audioUrl, '_blank');
-    } else {
-      toast.error('Audio is not available for this course yet');
+    // Use Web Speech API for text-to-speech
+    if (currentSubtopicData) {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        toast.success('Audio stopped');
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(currentSubtopicData.content.substring(0, 3000));
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+      toast.success('Playing audio — click again to stop');
     }
   };
 
@@ -572,7 +580,7 @@ export default function CourseView() {
                         : 'text-prose hover:bg-base'
                     }`}
                   >
-                    <span className="truncate text-left">{topic.title}</span>
+                    <span className="text-left line-clamp-2">{topic.title}</span>
                     <HiOutlineChevronDown
                       className={`h-4 w-4 flex-shrink-0 transition-transform ${
                         expandedTopics.has(tIndex) ? 'rotate-180' : ''
@@ -603,7 +611,7 @@ export default function CourseView() {
                             ) : (
                               <span className="w-3.5 h-3.5 flex-shrink-0" />
                             )}
-                            <span className="truncate text-left">{sub.title}</span>
+                            <span className="text-left line-clamp-1">{sub.title}</span>
                           </button>
                         );
                       })}

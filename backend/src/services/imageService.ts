@@ -7,14 +7,9 @@ class ImageService {
 
   async searchImage(query: string): Promise<string | null> {
     if (!this.accessKey) {
-      // Generate a themed placeholder image using placehold.co
-      // Clean query for display, take first 30 chars
-      const label = encodeURIComponent(query.substring(0, 30).trim());
-      // Generate consistent color from query
-      const colors = ['6C47FF', '4F46E5', '7C3AED', '2563EB', '0891B2', '059669', 'D97706', 'DC2626'];
-      const hash = Math.abs(query.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0));
-      const bg = colors[hash % colors.length];
-      return `https://placehold.co/800x450/${bg}/FFFFFF/png?text=${label}&font=roboto`;
+      // Use Unsplash Source (no API key needed) — returns real photos
+      const cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, '').trim().split(' ').slice(0, 3).join(',');
+      return `https://source.unsplash.com/800x450/?${encodeURIComponent(cleanQuery)}`;
     }
 
     try {
