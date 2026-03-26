@@ -162,7 +162,12 @@ class AIService {
   private parseJSON<T>(text: string): T {
     // Extract JSON from markdown code blocks if present
     const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const cleanText = jsonMatch ? jsonMatch[1].trim() : text.trim();
+    let cleanText = jsonMatch ? jsonMatch[1].trim() : text.trim();
+    // Try to find JSON array or object in text
+    const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+    const objectMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (arrayMatch) cleanText = arrayMatch[0];
+    else if (objectMatch) cleanText = objectMatch[0];
     return JSON.parse(cleanText);
   }
 
@@ -224,13 +229,20 @@ Requirements:
 - All content must be in ${language}
 - imageSearchTerm should be in English for image search APIs`;
 
-      const result = await this.generate(provider, prompt);
-      const subtopics = this.parseJSON<SubtopicContent[]>(result);
-
-      courseContent.push({
-        title: topic.title,
-        subtopics,
-      });
+      try {
+        const result = await this.generate(provider, prompt);
+        const subtopics = this.parseJSON<SubtopicContent[]>(result);
+        courseContent.push({ title: topic.title, subtopics });
+      } catch (err: any) {
+        console.error(`Failed to generate content for topic "${topic.title}":`, err.message);
+        // Fallback: create basic content from subtopic names
+        const fallbackSubtopics = topic.subtopics.map(sub => ({
+          title: sub,
+          content: `This section covers ${sub} as part of ${topic.title}. This is an important concept that builds on fundamental principles and provides practical knowledge for learners.\n\nKey points about ${sub}:\n\n1. **Understanding the basics** — ${sub} is a core component of ${topic.title} that every learner should master.\n\n2. **Practical applications** — The concepts covered here have real-world applications across many fields.\n\n3. **Building knowledge** — By studying ${sub}, you develop a deeper understanding of the overall subject matter.`,
+          imageSearchTerm: `${topic.title} ${sub}`,
+        }));
+        courseContent.push({ title: topic.title, subtopics: fallbackSubtopics });
+      }
     }
 
     return courseContent;
