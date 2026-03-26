@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import { storeDemoCourse, getDemoCourse, getAllDemoCourses } from '../utils/demoStore';
+import { storeDemoCourse, getDemoCourse, getAllDemoCourses, deleteDemoCourse } from '../utils/demoStore';
 import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { imageService } from '../services/imageService';
@@ -216,12 +216,21 @@ export const deleteCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+    const courseId = req.params.id;
+
+    // Demo course — delete from memory store
+    if (courseId.startsWith('demo-')) {
+      deleteDemoCourse(courseId);
+      res.status(200).json({ success: true, message: 'Course deleted successfully' });
+      return;
+    }
+
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId !== req.user!._id.toString()) {
+    if (course.userId !== String(req.user!._id || (req.user as any).id)) {
       throw new AppError('Not authorized to delete this course', 403);
     }
 
