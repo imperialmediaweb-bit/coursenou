@@ -107,7 +107,7 @@ export const generateCourse = async (
 
     const courseContent = await aiService.generateCourse(user.aiProvider, topics, type, language);
 
-    // Fetch images for each subtopic
+    // Fetch images for each subtopic — include course title for relevance
     const topicsWithImages = await Promise.all(
       courseContent.map(async (topic) => ({
         title: topic.title,
@@ -115,7 +115,7 @@ export const generateCourse = async (
           topic.subtopics.map(async (subtopic) => ({
             title: subtopic.title,
             content: subtopic.content,
-            imageUrl: await imageService.searchImage(subtopic.imageSearchTerm),
+            imageUrl: await imageService.searchImage(`${title} ${subtopic.title}`),
             videoUrl: null,
           }))
         ),
