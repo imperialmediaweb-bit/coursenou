@@ -31,7 +31,7 @@ export default function FlashcardsPage() {
     try {
       setLoading(true);
       const res = await api.get(`/flashcards/${courseId}`);
-      setFlashcard(res.data);
+      setFlashcard(res.data.data || res.data);
     } catch {
       // No flashcards yet
       setFlashcard(null);
@@ -44,7 +44,7 @@ export default function FlashcardsPage() {
     try {
       setGenerating(true);
       const res = await api.post(`/flashcards/generate/${courseId}`);
-      setFlashcard(res.data);
+      setFlashcard(res.data.data || res.data);
       setCurrentIndex(0);
       setFlipped(false);
       toast.success('Flashcards generated successfully!');
@@ -64,7 +64,7 @@ export default function FlashcardsPage() {
         correct,
         difficulty,
       });
-      setFlashcard(res.data);
+      setFlashcard(res.data.data || res.data);
       toast.success(
         difficulty === 'easy'
           ? 'Great job!'

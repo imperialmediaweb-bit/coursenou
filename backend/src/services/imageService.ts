@@ -7,7 +7,9 @@ class ImageService {
 
   async searchImage(query: string): Promise<string | null> {
     if (!this.accessKey) {
-      return null;
+      // No Unsplash key — return placeholder image based on query hash
+      const hash = Math.abs(query.split('').reduce((a, b) => ((a << 5) - a + b.charCodeAt(0)) | 0, 0));
+      return `https://picsum.photos/seed/${hash}/800/450`;
     }
 
     try {
