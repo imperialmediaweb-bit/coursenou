@@ -91,18 +91,25 @@ class AIService {
 
   private async generate(provider: AIProvider, prompt: string): Promise<string> {
     // Try requested provider, fallback to any available, then use mock
-    const providers: AIProvider[] = [provider, 'gemini', 'openai', 'claude'];
+    const providers: AIProvider[] = [provider, 'openai', 'gemini', 'claude'];
+    const tried: string[] = [];
+
     for (const p of providers) {
-      if (this.hasApiKey(p)) {
-        return this.callWithRetry(async () => {
-          if (p === 'gemini') return this.generateWithGemini(prompt);
-          if (p === 'claude') return this.generateWithClaude(prompt);
-          return this.generateWithOpenAI(prompt);
-        });
+      if (this.hasApiKey(p) && !tried.includes(p)) {
+        tried.push(p);
+        try {
+          if (p === 'gemini') return await this.generateWithGemini(prompt);
+          if (p === 'claude') return await this.generateWithClaude(prompt);
+          return await this.generateWithOpenAI(prompt);
+        } catch (error: any) {
+          console.error(`AI provider ${p} failed:`, error.message || error);
+          // Continue to next provider
+        }
       }
     }
-    // No API key available — return demo content
-    console.log('No AI API key configured — using demo generation');
+
+    // All providers failed or none configured — use demo content
+    console.log('All AI providers failed or none configured — using demo generation');
     return this.generateDemoContent(prompt);
   }
 
