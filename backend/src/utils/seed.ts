@@ -1,14 +1,14 @@
 import bcrypt from 'bcryptjs';
-import User from '../models/User';
+import prisma from './prisma';
 
 export async function seedDemoAccount(): Promise<void> {
   try {
     const demoEmail = 'demo@coursbit.com';
-    const existing = await User.findOne({ email: demoEmail });
+    const existing = await prisma.user.findUnique({ where: { email: demoEmail } });
     if (existing) return;
 
     const hashedPassword = await bcrypt.hash('demo123456', 12);
-    await User.create({
+    await prisma.user.create({ data: {
       name: 'Demo User',
       email: demoEmail,
       password: hashedPassword,
@@ -16,7 +16,7 @@ export async function seedDemoAccount(): Promise<void> {
       plan: 'monthly',
       planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
       aiProvider: 'gemini',
-    });
+    }});
 
     console.log('Demo account seeded: demo@coursbit.com / demo123456');
   } catch (error: any) {

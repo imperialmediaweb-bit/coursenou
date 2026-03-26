@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import Stripe from 'stripe';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import User from '../models/User';
+import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
 import { emailService } from '../services/emailService';
 
@@ -26,7 +26,7 @@ export const createCheckout = async (
       throw new AppError('Invalid plan. Must be "monthly" or "yearly"', 400);
     }
 
-    const user = await User.findById(req.user!._id);
+    const user = await prisma.user.findUnique({ where: { id: req.user!._id as string } });
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -36,10 +36,10 @@ export const createCheckout = async (
       const customer = await getStripe().customers.create({
         email: user.email,
         name: user.name,
-        metadata: { userId: user._id.toString() },
+        metadata: { userId: user.id.toString() },
       });
       user.stripeCustomerId = customer.id;
-      await user.save();
+      await prisma.user.update({ where: { id: user.id }, data: { stripeCustomerId: user.stripeCustomerId } });
     }
 
     const priceId =
@@ -54,7 +54,7 @@ export const createCheckout = async (
       cancel_url: `${process.env.FRONTEND_URL}/billing?cancelled=true`,
       customer: user.stripeCustomerId,
       metadata: {
-        userId: user._id.toString(),
+        userId: user.id.toString(),
         plan,
       },
     });
@@ -99,15 +99,15 @@ export const webhook = async (
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        const user = await User.findOne({
-          stripeSubscriptionId: subscription.id,
+        const user = await prisma.user.findFirst({
+          where: { stripeSubscriptionId: subscription.id },
         });
         if (user) {
           await paymentService.cancelSubscription(
-            user._id.toString(),
+            user.id.toString(),
             'stripe'
           );
-          await paymentService.handleExpiredSubscription(user._id.toString());
+          await paymentService.handleExpiredSubscription(user.id.toString());
         }
         break;
       }
@@ -115,7 +115,7 @@ export const webhook = async (
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         const customerId = invoice.customer as string;
-        const user = await User.findOne({ stripeCustomerId: customerId });
+        const user = await prisma.user.findFirst({ where: { stripeCustomerId: customerId } });
         if (user) {
           await emailService.sendPaymentFailed(user.email, user.name);
         }
@@ -135,7 +135,7 @@ export const cancelSubscription = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await User.findById(req.user!._id);
+    const user = await prisma.user.findUnique({ where: { id: req.user!._id as string } });
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -145,7 +145,7 @@ export const cancelSubscription = async (
     }
 
     await getStripe().subscriptions.cancel(user.stripeSubscriptionId);
-    await paymentService.cancelSubscription(user._id.toString(), 'stripe');
+    await paymentService.cancelSubscription(user.id.toString(), 'stripe');
 
     res.status(200).json({ message: 'Subscription cancelled successfully' });
   } catch (error) {

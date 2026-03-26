@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
+import prisma from '../utils/prisma';
 import { PLAN_LIMITS } from '../utils/planLimits';
 import { getDemoCourse, storeDemoCourse } from '../utils/demoStore';
 
@@ -33,19 +33,19 @@ export const duplicateCourse = async (
       return;
     }
 
-    const course = await Course.findById(req.params.courseId);
+    const course = await prisma.course.findUnique({ where: { id: req.params.courseId } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId.toString() !== user._id.toString()) {
+    if (course.userId !== user._id) {
       throw new AppError('Not authorized to duplicate this course', 403);
     }
 
     // Check plan limits
-    const limits = PLAN_LIMITS[user.plan];
+    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
     if (limits.maxCourses !== Infinity) {
-      const courseCount = await Course.countDocuments({ userId: user._id });
+      const courseCount = await prisma.course.count({ where: { userId: user._id as string } });
       if (courseCount >= limits.maxCourses) {
         throw new AppError(
           `Your ${user.plan} plan allows a maximum of ${limits.maxCourses} courses. Please upgrade for more.`,
@@ -55,9 +55,9 @@ export const duplicateCourse = async (
     }
 
     // Deep copy topics
-    const topicsCopy = course.topics.map((topic) => ({
+    const topicsCopy = (course.topics as any[]).map((topic) => ({
       title: topic.title,
-      subtopics: topic.subtopics.map((subtopic) => ({
+      subtopics: topic.subtopics.map((subtopic: any) => ({
         title: subtopic.title,
         content: subtopic.content,
         imageUrl: subtopic.imageUrl,
@@ -65,13 +65,15 @@ export const duplicateCourse = async (
       })),
     }));
 
-    const newCourse = await Course.create({
-      userId: user._id,
-      title: `${course.title} (Copy)`,
-      language: course.language,
-      type: course.type,
-      topics: topicsCopy,
-      shareToken: uuidv4(),
+    const newCourse = await prisma.course.create({
+      data: {
+        userId: user._id as string,
+        title: `${course.title} (Copy)`,
+        language: course.language,
+        type: course.type,
+        topics: topicsCopy as any,
+        shareToken: uuidv4(),
+      },
     });
 
     res.status(201).json({ success: true, data: newCourse });

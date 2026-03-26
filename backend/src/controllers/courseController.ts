@@ -4,11 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { storeDemoCourse, getDemoCourse, getAllDemoCourses } from '../utils/demoStore';
-import Course from '../models/Course';
-import User from '../models/User';
-import Certificate from '../models/Certificate';
-import Quiz from '../models/Quiz';
-import Note from '../models/Note';
+import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { imageService } from '../services/imageService';
 import { exportService } from '../services/exportService';
@@ -48,7 +44,7 @@ export const generateTopics = async (
 
     const { title, language, numTopics } = parsed.data;
     const user = req.user!;
-    const limits = PLAN_LIMITS[user.plan];
+    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
 
     if (numTopics > limits.maxTopics) {
       throw new AppError(
@@ -60,8 +56,15 @@ export const generateTopics = async (
     const topics = await aiService.generateTopics(user.aiProvider, title, language, numTopics);
 
     if (String(user._id) !== 'demo-user-id-001') {
-      user.aiCreditsUsed += 1;
-      await user.save();
+      if (typeof user.save === "function") {
+        user.aiCreditsUsed += 1;
+        await user.save();
+      } else {
+        await prisma.user.update({
+          where: { id: user._id },
+          data: { aiCreditsUsed: { increment: 1 } },
+        });
+      }
     }
 
     res.status(200).json({ success: true, data: topics });
@@ -83,7 +86,7 @@ export const generateCourse = async (
 
     const { title, language, type, topics } = parsed.data;
     const user = req.user!;
-    const limits = PLAN_LIMITS[user.plan];
+    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
 
     if (type === 'video' && !limits.allowVideo) {
       throw new AppError(
@@ -93,7 +96,7 @@ export const generateCourse = async (
     }
 
     if (limits.maxCourses !== Infinity && String(user._id) !== 'demo-user-id-001') {
-      const courseCount = await Course.countDocuments({ userId: user._id });
+      const courseCount = await prisma.course.count({ where: { userId: user._id } });
       if (courseCount >= limits.maxCourses) {
         throw new AppError(
           `Your ${user.plan} plan allows a maximum of ${limits.maxCourses} courses. Please upgrade for more.`,
@@ -140,13 +143,15 @@ export const generateCourse = async (
       return;
     }
 
-    const course = await Course.create({
-      userId: user._id,
-      title,
-      language,
-      type,
-      topics: topicsWithImages,
-      shareToken: uuidv4(),
+    const course = await prisma.course.create({
+      data: {
+        userId: user._id,
+        title,
+        language,
+        type,
+        topics: topicsWithImages,
+        shareToken: uuidv4(),
+      },
     });
 
     res.status(201).json({ success: true, data: course });
@@ -167,7 +172,10 @@ export const getCourses = async (
       res.status(200).json({ success: true, data: demoCourses });
       return;
     }
-    const courses = await Course.find({ userId: req.user!._id }).sort({ createdAt: -1 });
+    const courses = await prisma.course.findMany({
+      where: { userId: req.user!._id },
+      orderBy: { createdAt: 'desc' },
+    });
     res.status(200).json({ success: true, data: courses });
   } catch (error) {
     next(error);
@@ -187,12 +195,12 @@ export const getCourseById = async (
       return;
     }
 
-    const course = await Course.findById(req.params.id);
+    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId.toString() !== req.user!._id.toString()) {
+    if (course.userId !== req.user!._id.toString()) {
       throw new AppError('Not authorized to access this course', 403);
     }
 
@@ -208,18 +216,18 @@ export const deleteCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId.toString() !== req.user!._id.toString()) {
+    if (course.userId !== req.user!._id.toString()) {
       throw new AppError('Not authorized to delete this course', 403);
     }
 
-    await Quiz.deleteMany({ courseId: course._id });
-    await Note.deleteMany({ courseId: course._id });
-    await Course.findByIdAndDelete(course._id);
+    await prisma.quiz.deleteMany({ where: { courseId: course.id } });
+    await prisma.note.deleteMany({ where: { courseId: course.id } });
+    await prisma.course.delete({ where: { id: course.id } });
 
     res.status(200).json({ success: true, message: 'Course deleted successfully' });
   } catch (error) {
@@ -233,32 +241,35 @@ export const completeCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId.toString() !== req.user!._id.toString()) {
+    if (course.userId !== req.user!._id.toString()) {
       throw new AppError('Not authorized to complete this course', 403);
     }
 
     const user = req.user!;
 
-    course.isCompleted = true;
-    course.completedAt = new Date();
-    await course.save();
+    await prisma.course.update({
+      where: { id: course.id },
+      data: { isCompleted: true, completedAt: new Date() },
+    });
 
-    const certificate = await Certificate.create({
-      userId: user._id,
-      courseId: course._id,
-      courseName: course.title,
-      userName: user.name,
-      issuedAt: new Date(),
+    const certificate = await prisma.certificate.create({
+      data: {
+        userId: user._id,
+        courseId: course.id,
+        courseName: course.title,
+        userName: user.name,
+        issuedAt: new Date(),
+      },
     });
 
     // Send certificate email (non-blocking)
     emailService
-      .sendCertificateEarned(user.email, user.name, course.title, certificate._id.toString())
+      .sendCertificateEarned(user.email, user.name, course.title, certificate.id.toString())
       .catch(() => {});
 
     res.status(200).json({ success: true, data: certificate });
@@ -273,7 +284,7 @@ export const getSharedCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await Course.findOne({ shareToken: req.params.shareToken });
+    const course = await prisma.course.findUnique({ where: { shareToken: req.params.shareToken } });
     if (!course) {
       throw new AppError('Shared course not found', 404);
     }
@@ -291,7 +302,7 @@ export const generateAudio = async (
 ): Promise<void> => {
   try {
     const user = req.user!;
-    const limits = PLAN_LIMITS[user.plan];
+    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
 
     if (!limits.allowAudio) {
       throw new AppError(
@@ -318,7 +329,7 @@ export const exportPDF = async (
     // Get course from demo store or DB
     let course: any = getDemoCourse(req.params.id);
     if (!course) {
-      course = await Course.findById(req.params.id);
+      course = await prisma.course.findUnique({ where: { id: req.params.id } });
     }
     if (!course) {
       throw new AppError('Course not found', 404);
@@ -366,7 +377,7 @@ export const exportPPT = async (
 ): Promise<void> => {
   try {
     const user = req.user!;
-    const limits = PLAN_LIMITS[user.plan];
+    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
 
     if (!limits.allowPptExport) {
       throw new AppError('PowerPoint export requires a paid plan.', 403);
@@ -374,7 +385,7 @@ export const exportPPT = async (
 
     let course: any = getDemoCourse(req.params.id);
     if (!course) {
-      course = await Course.findById(req.params.id);
+      course = await prisma.course.findUnique({ where: { id: req.params.id } });
     }
     if (!course) {
       throw new AppError('Course not found', 404);

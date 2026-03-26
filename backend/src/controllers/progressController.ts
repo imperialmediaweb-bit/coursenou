@@ -1,8 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
-import CourseProgress from '../models/CourseProgress';
+import prisma from '../utils/prisma';
 
 export const getProgress = async (
   req: AuthRequest,
@@ -17,9 +16,11 @@ export const getProgress = async (
 
     const user = req.user!;
 
-    const progress = await CourseProgress.findOne({
-      userId: user._id,
-      courseId: req.params.courseId,
+    const progress = await prisma.courseProgress.findFirst({
+      where: {
+        userId: user._id as string,
+        courseId: req.params.courseId,
+      },
     });
 
     if (!progress) {
@@ -70,42 +71,52 @@ export const updateProgress = async (
     }
 
     // Find course to calculate total subtopics count
-    const course = await Course.findById(courseId);
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
     let totalSubtopics = 0;
-    for (const topic of course.topics) {
+    for (const topic of course.topics as any[]) {
       totalSubtopics += topic.subtopics.length;
     }
 
+    // Get existing progress to merge visitedSubtopics
+    const existing = await prisma.courseProgress.findFirst({
+      where: { userId: user._id as string, courseId },
+    });
+
+    // Merge visitedSubtopics (equivalent to $addToSet)
+    const existingVisited = (existing?.visitedSubtopics as string[]) || [];
+    const mergedVisited = [...new Set([...existingVisited, ...visitedSubtopics])];
+
     const percentage = totalSubtopics > 0
-      ? Math.min(100, Math.round((visitedSubtopics.length / totalSubtopics) * 100))
+      ? Math.min(100, Math.round((mergedVisited.length / totalSubtopics) * 100))
       : 0;
 
-    const progress = await CourseProgress.findOneAndUpdate(
-      { userId: user._id, courseId },
-      {
-        $addToSet: { visitedSubtopics: { $each: visitedSubtopics } },
-        $inc: { totalTimeSpent: timeSpent },
-        $set: {
-          percentage,
-          lastVisitedTopic,
-          lastVisitedSubtopic,
-        },
-      },
-      { upsert: true, new: true }
-    );
+    const newTotalTimeSpent = (existing?.totalTimeSpent || 0) + timeSpent;
 
-    // Recalculate percentage based on actual visitedSubtopics after $addToSet
-    if (progress.visitedSubtopics.length !== visitedSubtopics.length) {
-      const actualPercentage = totalSubtopics > 0
-        ? Math.min(100, Math.round((progress.visitedSubtopics.length / totalSubtopics) * 100))
-        : 0;
-      progress.percentage = actualPercentage;
-      await progress.save();
-    }
+    const progress = await prisma.courseProgress.upsert({
+      where: {
+        userId_courseId: { userId: user._id as string, courseId },
+      },
+      create: {
+        userId: user._id as string,
+        courseId,
+        visitedSubtopics: mergedVisited,
+        percentage,
+        lastVisitedTopic,
+        lastVisitedSubtopic,
+        totalTimeSpent: timeSpent,
+      },
+      update: {
+        visitedSubtopics: mergedVisited,
+        percentage,
+        lastVisitedTopic,
+        lastVisitedSubtopic,
+        totalTimeSpent: newTotalTimeSpent,
+      },
+    });
 
     res.status(200).json({ success: true, data: progress });
   } catch (error) {

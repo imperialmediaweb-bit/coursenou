@@ -2,14 +2,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import path from 'path';
+import prisma from './utils/prisma';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
-import { seedDemoAccount } from './utils/seed';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
@@ -117,25 +116,33 @@ app.use(errorHandler);
 // Database connection and server start
 const PORT = process.env.PORT || 3001;
 
-// Start server FIRST, then try MongoDB (so demo mode always works)
-app.listen(parseInt(PORT as string), '0.0.0.0', () => {
+// Start server, then connect to Postgres
+app.listen(parseInt(PORT as string), '0.0.0.0', async () => {
   console.log(`Server running on port ${PORT}`);
+  try {
+    await prisma.$connect();
+    console.log('Connected to PostgreSQL');
+    // Seed demo account
+    const bcrypt = require('bcryptjs');
+    const existing = await prisma.user.findUnique({ where: { email: 'demo@coursbit.com' } });
+    if (!existing) {
+      await prisma.user.create({
+        data: {
+          name: 'Demo User',
+          email: 'demo@coursbit.com',
+          password: await bcrypt.hash('demo123456', 12),
+          role: 'user',
+          plan: 'monthly',
+          planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          aiProvider: 'gemini',
+        },
+      });
+      console.log('Demo account seeded: demo@coursbit.com / demo123456');
+    }
+  } catch (err: any) {
+    console.error('DB connection issue:', err.message);
+    console.log('Demo login still works without DB');
+  }
 });
-
-// Try MongoDB connection in background (non-blocking)
-if (process.env.MONGODB_URI) {
-  mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(async () => {
-      console.log('Connected to MongoDB');
-      try { await seedDemoAccount(); } catch {}
-    })
-    .catch((err) => {
-      console.error('MongoDB not available:', err.message);
-      console.log('Running in demo mode — demo@coursbit.com login works without DB');
-    });
-} else {
-  console.log('No MONGODB_URI set — running in demo mode');
-}
 
 export default app;

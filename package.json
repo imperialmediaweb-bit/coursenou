@@ -7,7 +7,7 @@
   },
   "scripts": {
     "postinstall": "cd backend && npm install && cd ../frontend && npm install",
-    "build": "cd frontend && npm run build && cd ../backend && PUPPETEER_SKIP_DOWNLOAD=true npm run build",
+    "build": "cd frontend && npm run build && cd ../backend && npx prisma generate && npx prisma db push --accept-data-loss && PUPPETEER_SKIP_DOWNLOAD=true npm run build",
     "start": "cd backend && node dist/index.js"
   }
 }

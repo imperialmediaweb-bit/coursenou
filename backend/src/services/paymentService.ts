@@ -1,6 +1,5 @@
-import User, { IUser } from '../models/User';
-import Invoice from '../models/Invoice';
-import Subscription from '../models/Subscription';
+
+import prisma from '../utils/prisma';
 import { emailService } from './emailService';
 
 class PaymentService {
@@ -12,60 +11,68 @@ class PaymentService {
     amount: number;
     currency: string;
     receiptUrl?: string;
-  }): Promise<IUser> {
+  }): Promise<any> {
     const { userId, plan, provider, providerId, amount, currency, receiptUrl } = params;
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error('User not found');
     }
 
     // Set plan and expiration
-    user.plan = plan;
     const now = new Date();
+    let planExpiresAt: Date;
     if (plan === 'monthly') {
-      user.planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
+      planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
     } else {
-      user.planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
+      planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
     }
 
     // Save provider subscription ID
+    const providerData: any = { plan, planExpiresAt };
     switch (provider) {
       case 'stripe':
-        user.stripeSubscriptionId = providerId;
+        providerData.stripeSubscriptionId = providerId;
         break;
       case 'paypal':
-        user.paypalSubscriptionId = providerId;
+        providerData.paypalSubscriptionId = providerId;
         break;
       case 'razorpay':
-        user.razorpaySubscriptionId = providerId;
+        providerData.razorpaySubscriptionId = providerId;
         break;
       case 'paystack':
-        user.paystackCustomerCode = providerId;
+        providerData.paystackCustomerCode = providerId;
         break;
     }
 
-    await user.save();
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: providerData,
+    });
 
     // Create invoice
-    await Invoice.create({
-      userId: user._id,
-      amount,
-      currency,
-      plan,
-      provider,
-      status: 'paid',
-      receiptUrl: receiptUrl || null,
-      providerInvoiceId: providerId,
+    await prisma.invoice.create({
+      data: {
+        userId: user.id,
+        amount,
+        currency,
+        plan,
+        provider,
+        status: 'paid',
+        receiptUrl: receiptUrl || null,
+        providerInvoiceId: providerId,
+      },
     });
 
     // Create subscription record
     const startDate = new Date();
-    const endDate = new Date(user.planExpiresAt!);
-    await Subscription.findOneAndUpdate(
-      { userId: user._id, provider },
-      {
-        userId: user._id,
+    const endDate = new Date(updatedUser.planExpiresAt!);
+    await prisma.subscription.upsert({
+      where: {
+        userId_provider: { userId: user.id, provider },
+      },
+      create: {
+        userId: user.id,
         provider,
         planType: plan,
         status: 'active',
@@ -73,33 +80,44 @@ class PaymentService {
         endDate,
         providerId,
       },
-      { upsert: true, new: true }
-    );
+      update: {
+        planType: plan,
+        status: 'active',
+        startDate,
+        endDate,
+        providerId,
+      },
+    });
 
     // Send confirmation email
     await emailService.sendSubscriptionConfirmation(
-      user.email,
-      user.name,
+      updatedUser.email,
+      updatedUser.name,
       plan,
       amount,
       currency,
       endDate
     );
 
-    return user;
+    return updatedUser as any;
   }
 
   async cancelSubscription(userId: string, provider: string): Promise<void> {
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error('User not found');
     }
 
     // Update subscription record
-    await Subscription.findOneAndUpdate(
-      { userId: user._id, provider, status: 'active' },
-      { status: 'cancelled' }
-    );
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId: user.id, provider, status: 'active' },
+    });
+    if (subscription) {
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { status: 'cancelled' },
+      });
+    }
 
     // User keeps access until planExpiresAt
     const expiresAt = user.planExpiresAt || new Date();
@@ -112,9 +130,9 @@ class PaymentService {
   }
 
   async handleExpiredSubscription(userId: string): Promise<void> {
-    await User.findByIdAndUpdate(userId, {
-      plan: 'free',
-      planExpiresAt: null,
+    await prisma.user.update({
+      where: { id: userId },
+      data: { plan: 'free', planExpiresAt: null },
     });
   }
 
@@ -128,28 +146,34 @@ class PaymentService {
   }): Promise<void> {
     const { userId, plan, provider, amount, currency, receiptUrl } = params;
 
-    const user = await User.findById(userId);
+    const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
     // Extend plan
     const now = new Date();
-    user.plan = plan;
+    let planExpiresAt: Date;
     if (plan === 'monthly') {
-      user.planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
+      planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
     } else {
-      user.planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
+      planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
     }
-    await user.save();
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { plan, planExpiresAt },
+    });
 
     // Create invoice
-    await Invoice.create({
-      userId: user._id,
-      amount,
-      currency,
-      plan,
-      provider,
-      status: 'paid',
-      receiptUrl: receiptUrl || null,
+    await prisma.invoice.create({
+      data: {
+        userId: user.id,
+        amount,
+        currency,
+        plan,
+        provider,
+        status: 'paid',
+        receiptUrl: receiptUrl || null,
+      },
     });
 
     await emailService.sendRecurringPayment(

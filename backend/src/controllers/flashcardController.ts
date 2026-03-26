@@ -1,8 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
-import Flashcard from '../models/Flashcard';
+import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
 
@@ -32,10 +31,10 @@ export const generateFlashcards = async (
         }
       }
     } else {
-      const course = await Course.findById(courseId);
+      const course = await prisma.course.findUnique({ where: { id: courseId } });
       if (!course) throw new AppError('Course not found', 404);
-      if (course.userId.toString() !== user._id.toString()) throw new AppError('Not authorized', 403);
-      for (const topic of course.topics) {
+      if (course.userId !== user._id) throw new AppError('Not authorized', 403);
+      for (const topic of course.topics as any[]) {
         for (const subtopic of topic.subtopics) {
           courseContent += `${subtopic.title}: ${subtopic.content}\n`;
         }
@@ -69,14 +68,26 @@ export const generateFlashcards = async (
       return;
     }
 
-    const flashcard = await Flashcard.findOneAndUpdate(
-      { userId: user._id, courseId },
-      { userId: user._id, courseId, cards },
-      { upsert: true, new: true }
-    );
+    const flashcard = await prisma.flashcard.upsert({
+      where: {
+        userId_courseId: { userId: user._id as string, courseId },
+      },
+      create: {
+        userId: user._id as string,
+        courseId,
+        cards: cards as any,
+      },
+      update: {
+        cards: cards as any,
+      },
+    });
 
-    user.aiCreditsUsed += 1;
-    await user.save();
+    if (String(user._id || user._id) !== 'demo-user-id-001') {
+      await prisma.user.update({
+        where: { id: String(user._id) },
+        data: { aiCreditsUsed: user.aiCreditsUsed + 1 },
+      });
+    }
 
     res.status(200).json({ success: true, data: flashcard });
   } catch (error) {
@@ -104,9 +115,11 @@ export const getFlashcards = async (
       return;
     }
 
-    const flashcard = await Flashcard.findOne({
-      userId: req.user!._id,
-      courseId,
+    const flashcard = await prisma.flashcard.findFirst({
+      where: {
+        userId: req.user!._id as string,
+        courseId,
+      },
     });
 
     if (!flashcard) {
@@ -153,14 +166,15 @@ export const updateCard = async (
       return;
     }
 
-    const flashcard = await Flashcard.findOne({ userId: req.user!._id, courseId });
+    const flashcard = await prisma.flashcard.findFirst({ where: { userId: req.user!._id as string, courseId } });
     if (!flashcard) throw new AppError('Flashcards not found', 404);
 
-    if (isNaN(index) || index < 0 || index >= flashcard.cards.length) {
+    if (isNaN(index) || index < 0 || index >= (flashcard.cards as any[]).length) {
       throw new AppError('Invalid card index', 400);
     }
 
-    const card = flashcard.cards[index];
+    const cards = flashcard.cards as any[];
+    const card = cards[index];
     if (difficulty && ['easy', 'medium', 'hard'].includes(difficulty)) card.difficulty = difficulty;
     card.lastReviewed = new Date();
     const now = new Date();
@@ -169,9 +183,13 @@ export const updateCard = async (
       if (correct) card.correctCount += 1;
       else card.incorrectCount += 1;
     }
-    await flashcard.save();
 
-    res.status(200).json({ success: true, data: flashcard });
+    const updated = await prisma.flashcard.update({
+      where: { id: flashcard.id },
+      data: { cards: cards as any },
+    });
+
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
     next(error);
   }

@@ -1,8 +1,8 @@
 import PptxGenJS from 'pptxgenjs';
-import { ICourse } from '../models/Course';
+
 
 class ExportService {
-  async generatePDF(course: ICourse): Promise<Buffer> {
+  async generatePDF(course: any): Promise<Buffer> {
     // Use puppeteer to generate PDF from HTML
     let browser;
     try {
@@ -32,7 +32,7 @@ class ExportService {
     }
   }
 
-  private generateCourseHTML(course: ICourse): string {
+  private generateCourseHTML(course: any): string {
     let html = `<!DOCTYPE html>
 <html>
 <head>
@@ -62,17 +62,17 @@ class ExportService {
   <div class="toc">
     <h2>Table of Contents</h2>`;
 
-    course.topics.forEach((topic, i) => {
+    course.topics.forEach((topic: any, i: number) => {
       html += `<div class="toc-item">${i + 1}. ${this.escapeHtml(topic.title)}</div>`;
     });
 
     html += `</div>`;
 
-    course.topics.forEach((topic, i) => {
+    course.topics.forEach((topic: any, i: number) => {
       html += `<div class="topic">
         <h2>${i + 1}. ${this.escapeHtml(topic.title)}</h2>`;
 
-      topic.subtopics.forEach((subtopic) => {
+      topic.subtopics.forEach((subtopic: any) => {
         html += `<h3>${this.escapeHtml(subtopic.title)}</h3>`;
         html += `<div>${subtopic.content}</div>`;
         if (subtopic.imageUrl) {
@@ -87,7 +87,7 @@ class ExportService {
     return html;
   }
 
-  async generatePPT(course: ICourse): Promise<Buffer> {
+  async generatePPT(course: any): Promise<Buffer> {
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_16x9';
     pptx.author = 'CourseBit';
@@ -132,7 +132,7 @@ class ExportService {
     });
 
     const tocText = course.topics
-      .map((t, i) => `${i + 1}. ${t.title}`)
+      .map((t: any, i: number) => `${i + 1}. ${t.title}`)
       .join('\n');
     tocSlide.addText(tocText, {
       x: 0.5,
@@ -146,7 +146,7 @@ class ExportService {
     });
 
     // Content slides
-    for (const topic of course.topics) {
+    for (const topic of course.topics as any[]) {
       // Topic title slide
       const topicSlide = pptx.addSlide();
       topicSlide.background = { fill: 'EEF2FF' };

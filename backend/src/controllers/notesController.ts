@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Note from '../models/Note';
+import prisma from '../utils/prisma';
 
 export const getNotes = async (
   req: AuthRequest,
@@ -14,9 +14,11 @@ export const getNotes = async (
       return;
     }
 
-    const note = await Note.findOne({
-      courseId: req.params.courseId,
-      userId: req.user!._id,
+    const note = await prisma.note.findFirst({
+      where: {
+        courseId: req.params.courseId,
+        userId: req.user!._id as string,
+      },
     });
 
     res.status(200).json({ success: true, data: note || { content: '' } });
@@ -41,11 +43,19 @@ export const saveNotes = async (
       throw new AppError('Content must be a string', 400);
     }
 
-    const note = await Note.findOneAndUpdate(
-      { userId: req.user!._id, courseId: req.params.courseId },
-      { userId: req.user!._id, courseId: req.params.courseId, content },
-      { upsert: true, new: true }
-    );
+    const note = await prisma.note.upsert({
+      where: {
+        userId_courseId: { userId: req.user!._id as string, courseId: req.params.courseId },
+      },
+      create: {
+        userId: req.user!._id as string,
+        courseId: req.params.courseId,
+        content,
+      },
+      update: {
+        content,
+      },
+    });
 
     res.status(200).json({ success: true, data: note });
   } catch (error) {

@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
+import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
 
@@ -34,23 +34,25 @@ export const chat = async (
       }
       const response = await aiService.chatResponse(user.aiProvider, message.trim(), context);
       user.aiCreditsUsed += 1;
-      if (typeof user.save === "function") await user.save();
+      if (String(user._id || user._id) !== 'demo-user-id-001') {
+        await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
+      }
       res.status(200).json({ success: true, data: { response } });
       return;
     }
 
-    const course = await Course.findById(req.params.courseId);
+    const course = await prisma.course.findUnique({ where: { id: req.params.courseId } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    if (course.userId.toString() !== user._id.toString()) {
+    if (course.userId !== user._id) {
       throw new AppError('Not authorized to access this course', 403);
     }
 
     // Build context string from course topics/subtopics content
     let context = '';
-    for (const topic of course.topics) {
+    for (const topic of course.topics as any[]) {
       context += `Topic: ${topic.title}\n`;
       for (const subtopic of topic.subtopics) {
         context += `  ${subtopic.title}: ${subtopic.content}\n`;
@@ -61,7 +63,9 @@ export const chat = async (
     const response = await aiService.chatResponse(user.aiProvider, message.trim(), context);
 
     user.aiCreditsUsed += 1;
-    if (typeof user.save === "function") await user.save();
+    if (String(user._id || user._id) !== 'demo-user-id-001') {
+      await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
+    }
 
     res.status(200).json({ success: true, data: { response } });
   } catch (error) {

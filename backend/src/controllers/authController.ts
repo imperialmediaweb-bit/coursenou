@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { z } from 'zod';
-import User from '../models/User';
+import prisma from '../utils/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { emailService } from '../services/emailService';
@@ -22,23 +22,24 @@ export const register = async (
   try {
     const { name, email, password } = registerSchema.parse(req.body);
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       throw new AppError('Email already in use', 400);
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
     });
 
     await emailService.sendWelcome(email, name);
 
-    const userObj = user.toObject();
-    const { password: _pw, ...userWithoutPassword } = userObj;
+    const { password: _pw, ...userWithoutPassword } = newUser;
 
     res.status(201).json({ user: userWithoutPassword });
   } catch (error) {
@@ -99,7 +100,7 @@ export const login = async (
 
     let user;
     try {
-      user = await User.findOne({ email });
+      user = await prisma.user.findUnique({ where: { email } });
     } catch {
       throw new AppError('Database not available. Use demo account: demo@coursbit.com', 503);
     }
@@ -113,19 +114,21 @@ export const login = async (
     }
 
     const accessToken = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET!,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any }
     );
 
     const refreshToken = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_REFRESH_SECRET!,
       { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any }
     );
 
-    user.refreshToken = refreshToken;
-    await user.save();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -134,8 +137,7 @@ export const login = async (
       path: '/',
     });
 
-    const userObj = user.toObject();
-    const { password: _pw, refreshToken: _rt, ...userWithoutSensitive } = userObj;
+    const { password: _pw, refreshToken: _rt, ...userWithoutSensitive } = user;
 
     res.json({ accessToken, user: userWithoutSensitive });
   } catch (error) {
@@ -152,10 +154,10 @@ export const logout = async (
     const { refreshToken } = req.cookies;
 
     if (refreshToken) {
-      await User.findOneAndUpdate(
-        { refreshToken },
-        { refreshToken: null }
-      );
+      await prisma.user.updateMany({
+        where: { refreshToken },
+        data: { refreshToken: null },
+      });
     }
 
     res.clearCookie('refreshToken', {
@@ -196,7 +198,7 @@ export const refresh = async (
       return;
     }
 
-    const user = await User.findById(decoded.userId);
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) {
       throw new AppError('User not found', 401);
     }
@@ -206,19 +208,21 @@ export const refresh = async (
     }
 
     const newAccessToken = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET!,
       { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any }
     );
 
     const newRefreshToken = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_REFRESH_SECRET!,
       { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any }
     );
 
-    user.refreshToken = newRefreshToken;
-    await user.save();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken: newRefreshToken },
+    });
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
@@ -245,7 +249,7 @@ export const forgotPassword = async (
       throw new AppError('Email is required', 400);
     }
 
-    const user = await User.findOne({ email });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Return success even if user not found to prevent email enumeration
       res.json({ message: 'If an account with that email exists, a reset link has been sent' });
@@ -254,9 +258,13 @@ export const forgotPassword = async (
 
     const resetToken = crypto.randomBytes(32).toString('hex');
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    await user.save();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: resetToken,
+        resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
+      },
+    });
 
     await emailService.sendForgotPassword(user.email, user.name, resetToken);
 
@@ -278,19 +286,27 @@ export const resetPassword = async (
       throw new AppError('Token and new password are required', 400);
     }
 
-    const user = await User.findOne({
-      resetPasswordToken: token,
-      resetPasswordExpires: { $gt: new Date() },
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: token,
+        resetPasswordExpires: { gt: new Date() },
+      },
     });
 
     if (!user) {
       throw new AppError('Invalid or expired reset token', 400);
     }
 
-    user.password = await bcrypt.hash(password, 12);
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      },
+    });
 
     res.json({ message: 'Password reset successfully' });
   } catch (error) {

@@ -2,13 +2,7 @@ import { Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import User from '../models/User';
-import Course from '../models/Course';
-import Quiz from '../models/Quiz';
-import Note from '../models/Note';
-import Certificate from '../models/Certificate';
-import Invoice from '../models/Invoice';
-import Subscription from '../models/Subscription';
+import prisma from '../utils/prisma';
 
 export const getProfile = async (
   req: AuthRequest,
@@ -34,25 +28,29 @@ export const updateProfile = async (
       throw new AppError('Please provide name or email to update', 400);
     }
 
-    const user = await User.findById(req.user!._id).select('-password');
+    const user = await prisma.user.findUnique({ where: { id: req.user!._id as string } });
     if (!user) {
       throw new AppError('User not found', 404);
     }
 
     if (email && email !== user.email) {
-      const existing = await User.findOne({ email });
+      const existing = await prisma.user.findFirst({ where: { email } });
       if (existing) {
         throw new AppError('Email is already in use', 400);
       }
-      user.email = email;
     }
 
-    if (name) {
-      user.name = name;
-    }
+    const updated = await prisma.user.update({
+      where: { id: req.user!._id as string },
+      data: {
+        ...(name ? { name } : {}),
+        ...(email ? { email } : {}),
+      },
+    });
 
-    await user.save();
-    res.json(user);
+    // Exclude password from response
+    const { password: _, ...userWithoutPassword } = updated;
+    res.json(userWithoutPassword);
   } catch (error) {
     next(error);
   }
@@ -74,7 +72,7 @@ export const changePassword = async (
       throw new AppError('New password must be at least 8 characters', 400);
     }
 
-    const user = await User.findById(req.user!._id);
+    const user = await prisma.user.findUnique({ where: { id: req.user!._id as string } });
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -84,8 +82,11 @@ export const changePassword = async (
       throw new AppError('Current password is incorrect', 400);
     }
 
-    user.password = await bcrypt.hash(newPassword, 12);
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: req.user!._id as string },
+      data: { password: hashedPassword },
+    });
 
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
@@ -105,13 +106,13 @@ export const switchAiProvider = async (
       throw new AppError('Invalid AI provider. Must be gemini or openai', 400);
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.user!._id,
-      { aiProvider: provider },
-      { new: true }
-    ).select('-password');
+    const updated = await prisma.user.update({
+      where: { id: req.user!._id as string },
+      data: { aiProvider: provider },
+    });
 
-    res.json(user);
+    const { password: _, ...userWithoutPassword } = updated;
+    res.json(userWithoutPassword);
   } catch (error) {
     next(error);
   }
@@ -123,17 +124,17 @@ export const deleteAccount = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userId = req.user!._id;
+    const userId = req.user!._id as string;
 
     await Promise.all([
-      Course.deleteMany({ userId }),
-      Quiz.deleteMany({ userId }),
-      Note.deleteMany({ userId }),
-      Certificate.deleteMany({ userId }),
-      Invoice.deleteMany({ userId }),
-      Subscription.deleteMany({ userId }),
-      User.findByIdAndDelete(userId),
+      prisma.course.deleteMany({ where: { userId } }),
+      prisma.quiz.deleteMany({ where: { userId } }),
+      prisma.note.deleteMany({ where: { userId } }),
+      prisma.certificate.deleteMany({ where: { userId } }),
+      prisma.invoice.deleteMany({ where: { userId } }),
+      prisma.subscription.deleteMany({ where: { userId } }),
     ]);
+    await prisma.user.delete({ where: { id: userId } });
 
     res.clearCookie('refreshToken');
     res.json({ message: 'Account deleted successfully' });

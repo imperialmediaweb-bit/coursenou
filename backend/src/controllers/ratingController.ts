@@ -1,8 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
-import Rating from '../models/Rating';
+import prisma from '../utils/prisma';
 
 export const rateCourse = async (
   req: AuthRequest,
@@ -28,21 +27,26 @@ export const rateCourse = async (
     }
 
     // Verify course exists
-    const course = await Course.findById(courseId);
+    const course = await prisma.course.findUnique({ where: { id: courseId } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    const ratingDoc = await Rating.findOneAndUpdate(
-      { userId: user._id, courseId },
-      {
-        userId: user._id,
+    const ratingDoc = await prisma.rating.upsert({
+      where: {
+        userId_courseId: { userId: user._id as string, courseId },
+      },
+      create: {
+        userId: user._id as string,
         courseId,
         rating,
         feedback: feedback || '',
       },
-      { upsert: true, new: true }
-    );
+      update: {
+        rating,
+        feedback: feedback || '',
+      },
+    });
 
     res.status(200).json({ success: true, data: ratingDoc });
   } catch (error) {
@@ -65,22 +69,21 @@ export const getCourseRating = async (
     const { courseId } = req.params;
 
     // Get user's own rating
-    const userRating = await Rating.findOne({ userId: user._id, courseId });
+    const userRating = await prisma.rating.findFirst({
+      where: { userId: user._id as string, courseId },
+    });
 
     // Aggregate average rating and total count
-    const aggregate = await Rating.aggregate([
-      { $match: { courseId: require('mongoose').Types.ObjectId.createFromHexString(courseId) } },
-      {
-        $group: {
-          _id: null,
-          averageRating: { $avg: '$rating' },
-          totalRatings: { $sum: 1 },
-        },
-      },
-    ]);
+    const aggregate = await prisma.rating.aggregate({
+      where: { courseId },
+      _avg: { rating: true },
+      _count: true,
+    });
 
-    const averageRating = aggregate.length > 0 ? Math.round(aggregate[0].averageRating * 10) / 10 : 0;
-    const totalRatings = aggregate.length > 0 ? aggregate[0].totalRatings : 0;
+    const averageRating = aggregate._avg.rating
+      ? Math.round(aggregate._avg.rating * 10) / 10
+      : 0;
+    const totalRatings = aggregate._count;
 
     res.status(200).json({
       success: true,
@@ -108,9 +111,11 @@ export const getCourseRatings = async (
 
     const { courseId } = req.params;
 
-    const ratings = await Rating.find({ courseId })
-      .populate('userId', 'name')
-      .sort({ createdAt: -1 });
+    const ratings = await prisma.rating.findMany({
+      where: { courseId },
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
 
     res.status(200).json({ success: true, data: ratings });
   } catch (error) {

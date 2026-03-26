@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import User from '../models/User';
+import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
 
 const getPayPalBaseUrl = (): string => {
@@ -64,7 +64,7 @@ export const createSubscription = async (
           },
           email_address: user.email,
         },
-        custom_id: user._id.toString(),
+        custom_id: user.id.toString(),
         application_context: {
           brand_name: 'CourseBit',
           return_url: `${process.env.FRONTEND_URL}/billing?paypal=true&plan=${plan}`,
@@ -172,12 +172,12 @@ export const webhook = async (
       case 'BILLING.SUBSCRIPTION.CANCELLED': {
         const resource = event.resource;
         const subscriptionId = resource.id;
-        const user = await User.findOne({
-          paypalSubscriptionId: subscriptionId,
+        const user = await prisma.user.findFirst({
+          where: { paypalSubscriptionId: subscriptionId },
         });
         if (user) {
           await paymentService.cancelSubscription(
-            user._id.toString(),
+            user.id.toString(),
             'paypal'
           );
         }
@@ -187,13 +187,13 @@ export const webhook = async (
       case 'PAYMENT.SALE.COMPLETED': {
         const resource = event.resource;
         const billingAgreementId = resource.billing_agreement_id;
-        const user = await User.findOne({
-          paypalSubscriptionId: billingAgreementId,
+        const user = await prisma.user.findFirst({
+          where: { paypalSubscriptionId: billingAgreementId },
         });
         if (user) {
           const plan = user.plan as 'monthly' | 'yearly';
           await paymentService.renewSubscription({
-            userId: user._id.toString(),
+            userId: user.id.toString(),
             plan,
             provider: 'paypal',
             amount: plan === 'monthly' ? 9.99 : 79.99,
@@ -216,7 +216,7 @@ export const cancelSubscription = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await User.findById(req.user!._id);
+    const user = await prisma.user.findUnique({ where: { id: req.user!._id as string } });
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -244,7 +244,7 @@ export const cancelSubscription = async (
       throw new AppError('Failed to cancel PayPal subscription', 500);
     }
 
-    await paymentService.cancelSubscription(user._id.toString(), 'paypal');
+    await paymentService.cancelSubscription(user.id.toString(), 'paypal');
 
     res.status(200).json({ message: 'Subscription cancelled successfully' });
   } catch (error) {

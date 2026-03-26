@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User, { IUser } from '../models/User';
 import { AppError } from '../utils/AppError';
+import prisma from '../utils/prisma';
 
 export interface AuthRequest extends Request {
-  user?: IUser;
+  user?: any;
 }
 
 export const authMiddleware = async (
@@ -40,19 +40,22 @@ export const authMiddleware = async (
       return;
     }
 
-    const user = await User.findById(decoded.userId).select('-password');
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) {
       throw new AppError('User not found', 401);
     }
 
     // Auto-expire plan if planExpiresAt has passed
     if (user.plan !== 'free' && user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
-      user.plan = 'free';
-      user.planExpiresAt = null;
-      await user.save();
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { plan: 'free', planExpiresAt: null },
+      });
+      (user as any).plan = 'free';
+      (user as any).planExpiresAt = null;
     }
 
-    req.user = user;
+    req.user = user as any;
     next();
   } catch (error) {
     if (error instanceof AppError) {
@@ -78,7 +81,8 @@ export const adminMiddleware = async (
     }
 
     // Always check role from DB, not from token
-    const user = await User.findById(req.user._id).select('role');
+    const id = String(req.user._id || (req.user as any).id);
+    const user = await prisma.user.findUnique({ where: { id }, select: { role: true } });
     if (!user || user.role !== 'admin') {
       throw new AppError('Admin access required', 403);
     }
@@ -97,20 +101,24 @@ export const planMiddleware = (requiredPlan: 'monthly' | 'yearly') => {
       }
 
       // Check plan from DB
-      const user = await User.findById(req.user._id).select('plan planExpiresAt');
+      const id = String(req.user._id || (req.user as any).id);
+      const user = await prisma.user.findUnique({ where: { id }, select: { plan: true, planExpiresAt: true } });
       if (!user) {
         throw new AppError('User not found', 404);
       }
 
       // Auto-expire
-      if (user.plan !== 'free' && user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
-        user.plan = 'free';
-        user.planExpiresAt = null;
-        await user.save();
+      let currentPlan = user.plan;
+      if (currentPlan !== 'free' && user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
+        await prisma.user.update({
+          where: { id },
+          data: { plan: 'free', planExpiresAt: null },
+        });
+        currentPlan = 'free';
       }
 
-      const planHierarchy = { free: 0, monthly: 1, yearly: 2 };
-      if (planHierarchy[user.plan] < planHierarchy[requiredPlan]) {
+      const planHierarchy: Record<string, number> = { free: 0, monthly: 1, yearly: 2 };
+      if (planHierarchy[currentPlan] < planHierarchy[requiredPlan]) {
         throw new AppError(
           `This feature requires a ${requiredPlan} plan. Please upgrade.`,
           403

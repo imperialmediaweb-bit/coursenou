@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  password              String
+  role                  String    @default("user")
+  plan                  String    @default("free")
+  planExpiresAt         DateTime?
+  stripeCustomerId      String?
+  stripeSubscriptionId  String?
+  paypalSubscriptionId  String?
+  razorpaySubscriptionId String?
+  paystackCustomerCode  String?
+  aiProvider            String    @default("gemini")
+  aiCreditsUsed         Int       @default(0)
+  refreshToken          String?
+  resetPasswordToken    String?
+  resetPasswordExpires  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  courses        Course[]
+  quizzes        Quiz[]
+  notes          Note[]
+  certificates   Certificate[]
+  invoices       Invoice[]
+  subscriptions  Subscription[]
+  flashcards     Flashcard[]
+  progress       CourseProgress[]
+  ratings        Rating[]
+  bookmarks      Bookmark[]
+}
+
+model Course {
+  id            String    @id @default(cuid())
+  userId        String
+  title         String
+  language      String    @default("English")
+  type          String    @default("image")
+  topics        Json      @default("[]")
+  audioUrl      String?
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime?
+  shareToken    String    @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quizzes       Quiz[]
+  notes         Note[]
+  certificates  Certificate[]
+  flashcards    Flashcard[]
+  progress      CourseProgress[]
+  ratings       Rating[]
+  bookmarks     Bookmark[]
+}
+
+model Quiz {
+  id          String    @id @default(cuid())
+  userId      String
+  courseId     String
+  language    String    @default("English")
+  questions   Json      @default("[]")
+  score       Float?
+  passed      Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  userId      String
+  courseId     String
+  courseName  String
+  userName    String
+  issuedAt    DateTime @default(now())
+  downloadUrl String   @default("")
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Invoice {
+  id                String   @id @default(cuid())
+  userId            String
+  amount            Float
+  currency          String   @default("usd")
+  plan              String
+  provider          String
+  status            String   @default("paid")
+  receiptUrl        String?
+  providerInvoiceId String?
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  provider    String
+  planType    String
+  status      String   @default("active")
+  startDate   DateTime
+  endDate     DateTime
+  providerId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+}
+
+model Blog {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  coverImage  String?
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  replied   Boolean  @default(false)
+  replyText String?
+  createdAt DateTime @default(now())
+}
+
+model ContentPage {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  content   String   @default("")
+  updatedAt DateTime @updatedAt
+}
+
+model Flashcard {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String
+  cards     Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model CourseProgress {
+  id                  String   @id @default(cuid())
+  userId              String
+  courseId             String
+  visitedSubtopics    Json     @default("[]")
+  percentage          Float    @default(0)
+  lastVisitedTopic    Int      @default(0)
+  lastVisitedSubtopic Int      @default(0)
+  totalTimeSpent      Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course              Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId   String
+  rating    Int
+  feedback  String   @default("")
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+}
+
+model Bookmark {
+  id             String   @id @default(cuid())
+  userId         String
+  courseId        String
+  topicIndex     Int
+  subtopicIndex  Int
+  subtopicTitle  String
+  note           String   @default("")
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}

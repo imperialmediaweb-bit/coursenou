@@ -1,16 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import User from '../models/User';
-import Course from '../models/Course';
-import Quiz from '../models/Quiz';
-import Note from '../models/Note';
-import Certificate from '../models/Certificate';
-import Invoice from '../models/Invoice';
-import Subscription from '../models/Subscription';
-import Blog from '../models/Blog';
-import ContactMessage from '../models/ContactMessage';
-import ContentPage from '../models/ContentPage';
+import prisma from '../utils/prisma';
 import { emailService } from '../services/emailService';
 
 export const getStats = async (
@@ -20,93 +11,61 @@ export const getStats = async (
 ): Promise<void> => {
   try {
     const [totalUsers, paidUsers, freeUsers, totalCourses] = await Promise.all([
-      User.countDocuments(),
-      User.countDocuments({ plan: { $ne: 'free' } }),
-      User.countDocuments({ plan: 'free' }),
-      Course.countDocuments(),
+      prisma.user.count(),
+      prisma.user.count({ where: { plan: { not: 'free' } } }),
+      prisma.user.count({ where: { plan: 'free' } }),
+      prisma.course.count(),
     ]);
 
-    const totalRevenueAgg = await Invoice.aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
-    ]);
-    const totalRevenue = totalRevenueAgg[0]?.total || 0;
+    // Total revenue from paid invoices
+    const totalRevenueAgg = await prisma.invoice.aggregate({
+      where: { status: 'paid' },
+      _sum: { amount: true },
+    });
+    const totalRevenue = totalRevenueAgg._sum.amount || 0;
 
+    // MRR: revenue this month
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const mrrAgg = await Invoice.aggregate([
-      { $match: { status: 'paid', createdAt: { $gte: startOfMonth } } },
-      { $group: { _id: null, total: { $sum: '$amount' } } },
-    ]);
-    const mrr = mrrAgg[0]?.total || 0;
+    const mrrAgg = await prisma.invoice.aggregate({
+      where: { status: 'paid', createdAt: { gte: startOfMonth } },
+      _sum: { amount: true },
+    });
+    const mrr = mrrAgg._sum.amount || 0;
 
+    // Monthly revenue for the last 12 months
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
-    const monthlyRevenue = await Invoice.aggregate([
-      { $match: { status: 'paid', createdAt: { $gte: twelveMonthsAgo } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-          },
-          amount: { $sum: '$amount' },
-        },
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
-      {
-        $project: {
-          _id: 0,
-          month: {
-            $concat: [
-              { $toString: '$_id.year' },
-              '-',
-              {
-                $cond: [
-                  { $lt: ['$_id.month', 10] },
-                  { $concat: ['0', { $toString: '$_id.month' }] },
-                  { $toString: '$_id.month' },
-                ],
-              },
-            ],
-          },
-          amount: 1,
-        },
-      },
-    ]);
+    const paidInvoices = await prisma.invoice.findMany({
+      where: { status: 'paid', createdAt: { gte: twelveMonthsAgo } },
+      select: { createdAt: true, amount: true },
+    });
 
-    const monthlyUsers = await User.aggregate([
-      { $match: { createdAt: { $gte: twelveMonthsAgo } } },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
-      {
-        $project: {
-          _id: 0,
-          month: {
-            $concat: [
-              { $toString: '$_id.year' },
-              '-',
-              {
-                $cond: [
-                  { $lt: ['$_id.month', 10] },
-                  { $concat: ['0', { $toString: '$_id.month' }] },
-                  { $toString: '$_id.month' },
-                ],
-              },
-            ],
-          },
-          count: 1,
-        },
-      },
-    ]);
+    const revenueMap = new Map<string, number>();
+    for (const inv of paidInvoices) {
+      const d = new Date(inv.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      revenueMap.set(key, (revenueMap.get(key) || 0) + inv.amount);
+    }
+    const monthlyRevenue = Array.from(revenueMap.entries())
+      .map(([month, amount]) => ({ month, amount }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    // Monthly users for the last 12 months
+    const recentUsers = await prisma.user.findMany({
+      where: { createdAt: { gte: twelveMonthsAgo } },
+      select: { createdAt: true },
+    });
+
+    const usersMap = new Map<string, number>();
+    for (const u of recentUsers) {
+      const d = new Date(u.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      usersMap.set(key, (usersMap.get(key) || 0) + 1);
+    }
+    const monthlyUsers = Array.from(usersMap.entries())
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
 
     res.json({
       totalUsers,
@@ -133,19 +92,27 @@ export const getUsers = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const search = req.query.search as string;
 
-    const filter: any = {};
+    const where: any = {};
     if (search) {
-      const regex = new RegExp(search, 'i');
-      filter.$or = [{ name: regex }, { email: regex }];
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const [users, total] = await Promise.all([
-      User.find(filter)
-        .select('-password')
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort({ createdAt: -1 }),
-      User.countDocuments(filter),
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true, name: true, email: true, role: true, plan: true,
+          planExpiresAt: true, aiProvider: true, aiCreditsUsed: true,
+          createdAt: true, updatedAt: true,
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.user.count({ where }),
     ]);
 
     res.json({
@@ -165,7 +132,14 @@ export const getUserById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
+    const user = await prisma.user.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true, name: true, email: true, role: true, plan: true,
+        planExpiresAt: true, aiProvider: true, aiCreditsUsed: true,
+        createdAt: true, updatedAt: true,
+      },
+    });
     if (!user) {
       throw new AppError('User not found', 404);
     }
@@ -186,25 +160,32 @@ export const updateUserPlan = async (
       throw new AppError('Invalid plan. Must be free, monthly, or yearly', 400);
     }
 
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) {
+    const existingUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!existingUser) {
       throw new AppError('User not found', 404);
     }
 
-    user.plan = plan;
-    if (plan === 'free') {
-      user.planExpiresAt = null;
-    } else {
+    let planExpiresAt: Date | null = null;
+    if (plan !== 'free') {
       const expiresAt = new Date();
       if (plan === 'monthly') {
         expiresAt.setMonth(expiresAt.getMonth() + 1);
       } else {
         expiresAt.setFullYear(expiresAt.getFullYear() + 1);
       }
-      user.planExpiresAt = expiresAt;
+      planExpiresAt = expiresAt;
     }
 
-    await user.save();
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { plan, planExpiresAt },
+      select: {
+        id: true, name: true, email: true, role: true, plan: true,
+        planExpiresAt: true, aiProvider: true, aiCreditsUsed: true,
+        createdAt: true, updatedAt: true,
+      },
+    });
+
     res.json(user);
   } catch (error) {
     next(error);
@@ -217,21 +198,21 @@ export const deleteUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
+    const existingUser = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!existingUser) {
       throw new AppError('User not found', 404);
     }
 
-    const userId = user._id;
+    const userId = existingUser.id;
     await Promise.all([
-      Course.deleteMany({ userId }),
-      Quiz.deleteMany({ userId }),
-      Note.deleteMany({ userId }),
-      Certificate.deleteMany({ userId }),
-      Invoice.deleteMany({ userId }),
-      Subscription.deleteMany({ userId }),
-      User.findByIdAndDelete(userId),
+      prisma.course.deleteMany({ where: { userId } }),
+      prisma.quiz.deleteMany({ where: { userId } }),
+      prisma.note.deleteMany({ where: { userId } }),
+      prisma.certificate.deleteMany({ where: { userId } }),
+      prisma.invoice.deleteMany({ where: { userId } }),
+      prisma.subscription.deleteMany({ where: { userId } }),
     ]);
+    await prisma.user.delete({ where: { id: userId } });
 
     res.json({ message: 'User and all associated data deleted successfully' });
   } catch (error) {
@@ -249,12 +230,13 @@ export const getCourses = async (
     const limit = parseInt(req.query.limit as string) || 10;
 
     const [courses, total] = await Promise.all([
-      Course.find()
-        .populate('userId', 'name email')
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort({ createdAt: -1 }),
-      Course.countDocuments(),
+      prisma.course.findMany({
+        include: { user: { select: { name: true, email: true } } },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.course.count(),
     ]);
 
     res.json({
@@ -274,17 +256,17 @@ export const deleteCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await Course.findById(req.params.id);
+    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
     if (!course) {
       throw new AppError('Course not found', 404);
     }
 
-    const courseId = course._id;
+    const courseId = course.id;
     await Promise.all([
-      Quiz.deleteMany({ courseId }),
-      Note.deleteMany({ courseId }),
-      Course.findByIdAndDelete(courseId),
+      prisma.quiz.deleteMany({ where: { courseId } }),
+      prisma.note.deleteMany({ where: { courseId } }),
     ]);
+    await prisma.course.delete({ where: { id: courseId } });
 
     res.json({ message: 'Course and associated data deleted successfully' });
   } catch (error) {
@@ -302,12 +284,13 @@ export const getInvoices = async (
     const limit = parseInt(req.query.limit as string) || 10;
 
     const [invoices, total] = await Promise.all([
-      Invoice.find()
-        .populate('userId', 'name email')
-        .skip((page - 1) * limit)
-        .limit(limit)
-        .sort({ createdAt: -1 }),
-      Invoice.countDocuments(),
+      prisma.invoice.findMany({
+        include: { user: { select: { name: true, email: true } } },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.invoice.count(),
     ]);
 
     res.json({
@@ -327,7 +310,7 @@ export const getBlogs = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blogs = await Blog.find().sort({ createdAt: -1 });
+    const blogs = await prisma.blog.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(blogs);
   } catch (error) {
     next(error);
@@ -351,12 +334,14 @@ export const createBlog = async (
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '');
 
-    const blog = await Blog.create({
-      title,
-      slug,
-      content,
-      published: published || false,
-      coverImage: coverImage || null,
+    const blog = await prisma.blog.create({
+      data: {
+        title,
+        slug,
+        content,
+        published: published || false,
+        coverImage: coverImage || null,
+      },
     });
 
     res.status(201).json(blog);
@@ -371,25 +356,29 @@ export const updateBlog = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blog = await Blog.findById(req.params.id);
-    if (!blog) {
+    const existing = await prisma.blog.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
       throw new AppError('Blog not found', 404);
     }
 
     const { title, content, published, coverImage } = req.body;
 
+    const data: any = {};
     if (title !== undefined) {
-      blog.title = title;
-      blog.slug = title
+      data.title = title;
+      data.slug = title
         .toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '');
     }
-    if (content !== undefined) blog.content = content;
-    if (published !== undefined) blog.published = published;
-    if (coverImage !== undefined) blog.coverImage = coverImage;
+    if (content !== undefined) data.content = content;
+    if (published !== undefined) data.published = published;
+    if (coverImage !== undefined) data.coverImage = coverImage;
 
-    await blog.save();
+    const blog = await prisma.blog.update({
+      where: { id: req.params.id },
+      data,
+    });
     res.json(blog);
   } catch (error) {
     next(error);
@@ -402,12 +391,12 @@ export const deleteBlog = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    const blog = await prisma.blog.findUnique({ where: { id: req.params.id } });
     if (!blog) {
       throw new AppError('Blog not found', 404);
     }
 
-    await Blog.findByIdAndDelete(req.params.id);
+    await prisma.blog.delete({ where: { id: req.params.id } });
     res.json({ message: 'Blog deleted successfully' });
   } catch (error) {
     next(error);
@@ -420,7 +409,7 @@ export const getMessages = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    const messages = await prisma.contactMessage.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(messages);
   } catch (error) {
     next(error);
@@ -433,8 +422,8 @@ export const replyToMessage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const message = await ContactMessage.findById(req.params.id);
-    if (!message) {
+    const existing = await prisma.contactMessage.findUnique({ where: { id: req.params.id } });
+    if (!existing) {
       throw new AppError('Message not found', 404);
     }
 
@@ -443,9 +432,10 @@ export const replyToMessage = async (
       throw new AppError('Reply text is required', 400);
     }
 
-    message.replied = true;
-    message.replyText = replyText;
-    await message.save();
+    const message = await prisma.contactMessage.update({
+      where: { id: req.params.id },
+      data: { replied: true, replyText },
+    });
 
     await emailService.sendContactReply(
       message.email,
@@ -466,7 +456,7 @@ export const getContentPage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const page = await ContentPage.findOne({ slug: req.params.slug });
+    const page = await prisma.contentPage.findFirst({ where: { slug: req.params.slug } });
     res.json(page);
   } catch (error) {
     next(error);
@@ -480,11 +470,11 @@ export const updateContentPage = async (
 ): Promise<void> => {
   try {
     const { content } = req.body;
-    const page = await ContentPage.findOneAndUpdate(
-      { slug: req.params.slug },
-      { content },
-      { new: true, upsert: true }
-    );
+    const page = await prisma.contentPage.upsert({
+      where: { slug: req.params.slug },
+      create: { slug: req.params.slug, content },
+      update: { content },
+    });
     res.json(page);
   } catch (error) {
     next(error);

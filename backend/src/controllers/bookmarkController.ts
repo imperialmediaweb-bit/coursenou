@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Bookmark from '../models/Bookmark';
+import prisma from '../utils/prisma';
 
 // In-memory bookmark store for demo users
 const demoBookmarks: any[] = [];
@@ -27,8 +27,10 @@ export const addBookmark = async (
       return;
     }
 
-    const bookmark = await Bookmark.create({
-      userId: req.user!._id, courseId, topicIndex, subtopicIndex, subtopicTitle, note: note || '',
+    const bookmark = await prisma.bookmark.create({
+      data: {
+        userId: req.user!._id as string, courseId, topicIndex, subtopicIndex, subtopicTitle, note: note || '',
+      },
     });
     res.status(201).json({ success: true, data: bookmark });
   } catch (error) {
@@ -47,7 +49,10 @@ export const getBookmarks = async (
       res.status(200).json({ success: true, data: bookmarks });
       return;
     }
-    const bookmarks = await Bookmark.find({ userId: req.user!._id, courseId: req.params.courseId }).sort({ createdAt: -1 });
+    const bookmarks = await prisma.bookmark.findMany({
+      where: { userId: req.user!._id as string, courseId: req.params.courseId },
+      orderBy: { createdAt: 'desc' },
+    });
     res.status(200).json({ success: true, data: bookmarks });
   } catch (error) {
     next(error);
@@ -64,7 +69,11 @@ export const getUserBookmarks = async (
       res.status(200).json({ success: true, data: demoBookmarks });
       return;
     }
-    const bookmarks = await Bookmark.find({ userId: req.user!._id }).populate('courseId', 'title').sort({ createdAt: -1 });
+    const bookmarks = await prisma.bookmark.findMany({
+      where: { userId: req.user!._id as string },
+      include: { course: { select: { title: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
     res.status(200).json({ success: true, data: bookmarks });
   } catch (error) {
     next(error);
@@ -83,10 +92,10 @@ export const removeBookmark = async (
       res.status(200).json({ success: true, message: 'Bookmark removed' });
       return;
     }
-    const bookmark = await Bookmark.findById(req.params.id);
+    const bookmark = await prisma.bookmark.findUnique({ where: { id: req.params.id } });
     if (!bookmark) throw new AppError('Bookmark not found', 404);
-    if (bookmark.userId.toString() !== req.user!._id.toString()) throw new AppError('Not authorized', 403);
-    await Bookmark.findByIdAndDelete(req.params.id);
+    if (bookmark.userId !== req.user!._id) throw new AppError('Not authorized', 403);
+    await prisma.bookmark.delete({ where: { id: req.params.id } });
     res.status(200).json({ success: true, message: 'Bookmark removed' });
   } catch (error) {
     next(error);

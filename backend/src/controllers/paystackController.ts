@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import User from '../models/User';
+import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
 
 export const initialize = async (

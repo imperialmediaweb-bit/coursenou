@@ -3,8 +3,7 @@ import puppeteer from 'puppeteer';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { PLAN_PRICES } from '../utils/planLimits';
-import Invoice from '../models/Invoice';
-import Subscription from '../models/Subscription';
+import prisma from '../utils/prisma';
 
 export const getPlans = async (
   _req: AuthRequest,
@@ -69,9 +68,11 @@ export const getSubscription = async (
       res.json({ subscription: null, plan: req.user!.plan, planExpiresAt: req.user!.planExpiresAt });
       return;
     }
-    const subscription = await Subscription.findOne({
-      userId: req.user!._id,
-      status: 'active',
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: req.user!._id as string,
+        status: 'active',
+      },
     });
 
     res.json({
@@ -94,8 +95,9 @@ export const getInvoices = async (
       res.json({ success: true, data: [] });
       return;
     }
-    const invoices = await Invoice.find({ userId: req.user!._id }).sort({
-      createdAt: -1,
+    const invoices = await prisma.invoice.findMany({
+      where: { userId: req.user!._id as string },
+      orderBy: { createdAt: 'desc' },
     });
     res.json(invoices);
   } catch (error) {
@@ -109,12 +111,12 @@ export const downloadInvoice = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await prisma.invoice.findUnique({ where: { id: req.params.id } });
     if (!invoice) {
       throw new AppError('Invoice not found', 404);
     }
 
-    if (invoice.userId.toString() !== req.user!._id.toString()) {
+    if (invoice.userId !== req.user!._id) {
       throw new AppError('Not authorized to access this invoice', 403);
     }
 
@@ -147,7 +149,7 @@ export const downloadInvoice = async (
           <h1>CourseBit</h1>
           <div class="invoice-info">
             <p><strong>Invoice</strong></p>
-            <p>ID: ${invoice._id}</p>
+            <p>ID: ${invoice.id}</p>
             <p>Date: ${new Date(invoice.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
           </div>
         </div>
@@ -196,7 +198,7 @@ export const downloadInvoice = async (
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename=invoice-${invoice._id}.pdf`,
+      'Content-Disposition': `attachment; filename=invoice-${invoice.id}.pdf`,
       'Content-Length': pdfBuffer.length,
     });
     res.send(pdfBuffer);

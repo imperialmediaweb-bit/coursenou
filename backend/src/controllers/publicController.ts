@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/AppError';
-import Blog from '../models/Blog';
-import ContentPage from '../models/ContentPage';
-import ContactMessage from '../models/ContactMessage';
+import prisma from '../utils/prisma';
 
 export const getPublishedBlogs = async (
   _req: Request,
@@ -10,7 +8,10 @@ export const getPublishedBlogs = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blogs = await Blog.find({ published: true }).sort({ createdAt: -1 });
+    const blogs = await prisma.blog.findMany({
+      where: { published: true },
+      orderBy: { createdAt: 'desc' },
+    });
     res.json(blogs);
   } catch (error) {
     next(error);
@@ -23,9 +24,11 @@ export const getBlogBySlug = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const blog = await Blog.findOne({
-      slug: req.params.slug,
-      published: true,
+    const blog = await prisma.blog.findFirst({
+      where: {
+        slug: req.params.slug,
+        published: true,
+      },
     });
     if (!blog) {
       throw new AppError('Blog not found', 404);
@@ -42,7 +45,7 @@ export const getContentPage = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const page = await ContentPage.findOne({ slug: req.params.slug });
+    const page = await prisma.contentPage.findFirst({ where: { slug: req.params.slug } });
     res.json(page);
   } catch (error) {
     next(error);
@@ -61,7 +64,7 @@ export const submitContact = async (
       throw new AppError('Name, email, and message are required', 400);
     }
 
-    await ContactMessage.create({ name, email, message });
+    await prisma.contactMessage.create({ data: { name, email, message } });
     res.status(201).json({ message: 'Message sent successfully' });
   } catch (error) {
     next(error);

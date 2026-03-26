@@ -1,8 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
-import Course from '../models/Course';
-import Invoice from '../models/Invoice';
+import prisma from '../utils/prisma';
 
 export const bulkExport = async (
   req: AuthRequest,
@@ -12,7 +11,10 @@ export const bulkExport = async (
   try {
     const user = req.user!;
 
-    const courses = await Course.find({ userId: user._id }).sort({ createdAt: -1 });
+    const courses = await prisma.course.findMany({
+      where: { userId: user._id as string },
+      orderBy: { createdAt: 'desc' },
+    });
 
     res.setHeader('Content-Type', 'application/json');
     res.setHeader(
@@ -38,14 +40,15 @@ export const exportAdminCSV = async (
       throw new AppError('Admin access required', 403);
     }
 
-    const invoices = await Invoice.find()
-      .populate('userId', 'name email')
-      .sort({ createdAt: -1 });
+    const invoices = await prisma.invoice.findMany({
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
 
     // Build CSV
     const headers = 'Date,User,Email,Amount,Currency,Plan,Provider,Status';
     const rows = invoices.map((invoice) => {
-      const invoiceUser = invoice.userId as any;
+      const invoiceUser = invoice.user as any;
       const date = new Date(invoice.createdAt).toISOString().split('T')[0];
       const userName = invoiceUser?.name || 'N/A';
       const email = invoiceUser?.email || 'N/A';
