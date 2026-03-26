@@ -31,7 +31,7 @@ export const authMiddleware = async (
         role: 'user',
         plan: 'monthly',
         planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-        aiProvider: process.env.GEMINI_API_KEY ? 'gemini' : process.env.CLAUDE_API_KEY ? 'claude' : process.env.OPENAI_API_KEY ? 'openai' : 'gemini',
+        aiProvider: process.env.OPENAI_API_KEY ? 'openai' : process.env.GEMINI_API_KEY ? 'gemini' : process.env.CLAUDE_API_KEY ? 'claude' : 'openai',
         aiCreditsUsed: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
