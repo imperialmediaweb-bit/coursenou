@@ -91,7 +91,7 @@ class AIService {
 
   private async generate(provider: AIProvider, prompt: string): Promise<string> {
     // Try requested provider, fallback to any available, then use mock
-    const providers: AIProvider[] = [provider, 'openai', 'gemini', 'claude'];
+    const providers: AIProvider[] = [provider, 'gemini', 'openai', 'claude'];
     const tried: string[] = [];
 
     for (const p of providers) {
