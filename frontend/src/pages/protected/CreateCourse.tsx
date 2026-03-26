@@ -280,10 +280,10 @@ export default function CreateCourse() {
                 <select
                   value={language}
                   onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors bg-surface"
+                  className="w-full px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-accent/50 focus:border-accent/50 outline-none transition-colors bg-surface text-white"
                 >
                   {LANGUAGES.map((lang) => (
-                    <option key={lang} value={lang}>
+                    <option key={lang} value={lang} style={{ backgroundColor: '#181B25', color: '#F0F0FF' }}>
                       {lang}
                     </option>
                   ))}
