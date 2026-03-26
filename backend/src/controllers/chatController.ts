@@ -34,7 +34,7 @@ export const chat = async (
       }
       const response = await aiService.chatResponse(user.aiProvider, message.trim(), context);
       user.aiCreditsUsed += 1;
-      await user.save();
+      if (typeof user.save === "function") await user.save();
       res.status(200).json({ success: true, data: { response } });
       return;
     }
@@ -61,7 +61,7 @@ export const chat = async (
     const response = await aiService.chatResponse(user.aiProvider, message.trim(), context);
 
     user.aiCreditsUsed += 1;
-    await user.save();
+    if (typeof user.save === "function") await user.save();
 
     res.status(200).json({ success: true, data: { response } });
   } catch (error) {

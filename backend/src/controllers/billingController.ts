@@ -65,6 +65,10 @@ export const getSubscription = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001') {
+      res.json({ subscription: null, plan: req.user!.plan, planExpiresAt: req.user!.planExpiresAt });
+      return;
+    }
     const subscription = await Subscription.findOne({
       userId: req.user!._id,
       status: 'active',
@@ -86,6 +90,10 @@ export const getInvoices = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (String(req.user!._id) === 'demo-user-id-001') {
+      res.json({ success: true, data: [] });
+      return;
+    }
     const invoices = await Invoice.find({ userId: req.user!._id }).sort({
       createdAt: -1,
     });

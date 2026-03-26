@@ -36,7 +36,7 @@ export const generateQuiz = async (
         10
       );
       req.user!.aiCreditsUsed += 1;
-      await req.user!.save();
+      if (typeof req.user!.save === "function") await req.user!.save();
       res.status(200).json({ success: true, data: { questions, courseId, score: null, passed: false } });
       return;
     }

@@ -28,7 +28,7 @@ export const generateSummary = async (
         const prompt = `Create a concise executive summary (200-300 words) of the following course content. Include key takeaways and main concepts covered. Language: ${demoCourse.language}. Content: ${content.substring(0, 8000)}`;
         const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
         user.aiCreditsUsed += 1;
-        await user.save();
+        if (typeof user.save === "function") await user.save();
         res.status(200).json({ success: true, data: { summary } });
       } else {
         res.status(200).json({ success: true, data: { summary: 'This is a demo course summary. The course covers various topics designed to showcase the platform features.' } });
@@ -59,7 +59,7 @@ export const generateSummary = async (
     const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
 
     user.aiCreditsUsed += 1;
-    await user.save();
+    if (typeof user.save === "function") await user.save();
 
     res.status(200).json({ success: true, data: { summary } });
   } catch (error) {
