@@ -636,34 +636,78 @@ export default function CourseView() {
           <div className="max-w-3xl mx-auto px-4 sm:px-8 py-8">
             {currentSubtopicData && (
               <>
-                <h2 className="text-2xl font-bold text-white mb-6">
-                  {currentSubtopicData.title}
-                </h2>
+                {/* Lesson header */}
+                <div className="mb-8">
+                  <div className="flex items-center gap-2 text-xs text-muted font-sans uppercase tracking-widest mb-2">
+                    <span>Topic {currentTopic + 1}</span>
+                    <span>·</span>
+                    <span>Lesson {currentSubtopic + 1}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
+                    {currentSubtopicData.title}
+                  </h2>
+                </div>
 
+                {/* Image */}
                 {currentSubtopicData.imageUrl && (
-                  <img
-                    src={currentSubtopicData.imageUrl}
-                    alt={currentSubtopicData.title}
-                    className="w-full max-h-96 object-cover rounded-xl mb-6"
-                  />
-                )}
-
-                {currentSubtopicData.videoUrl && (
-                  <div className="mb-6 rounded-xl overflow-hidden">
-                    <video
-                      src={currentSubtopicData.videoUrl}
-                      controls
-                      className="w-full"
+                  <div className="mb-8 rounded-2xl overflow-hidden border border-border">
+                    <img
+                      src={currentSubtopicData.imageUrl}
+                      alt={currentSubtopicData.title}
+                      className="w-full max-h-80 object-cover"
+                      loading="lazy"
                     />
                   </div>
                 )}
 
-                <div className="prose prose-indigo max-w-none mb-8">
-                  {currentSubtopicData.content.split('\n').map((paragraph, i) => (
-                    <p key={i} className="text-prose leading-relaxed mb-4">
-                      {paragraph}
-                    </p>
-                  ))}
+                {/* Video */}
+                {currentSubtopicData.videoUrl && (
+                  <div className="mb-8 rounded-2xl overflow-hidden border border-border">
+                    <video src={currentSubtopicData.videoUrl} controls className="w-full" />
+                  </div>
+                )}
+
+                {/* Content — rendered with markdown-like formatting */}
+                <div className="mb-8 space-y-4">
+                  {currentSubtopicData.content.split('\n').map((paragraph, i) => {
+                    const trimmed = paragraph.trim();
+                    if (!trimmed) return null;
+                    // Headers (## or **)
+                    if (trimmed.startsWith('## ')) {
+                      return <h3 key={i} className="text-xl font-bold text-white mt-6 mb-2">{trimmed.replace('## ', '')}</h3>;
+                    }
+                    if (trimmed.startsWith('### ')) {
+                      return <h4 key={i} className="text-lg font-semibold text-white mt-4 mb-1">{trimmed.replace('### ', '')}</h4>;
+                    }
+                    // Bold text lines (starts and ends with **)
+                    if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+                      return <p key={i} className="text-white font-semibold mt-4">{trimmed.replace(/\*\*/g, '')}</p>;
+                    }
+                    // List items
+                    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+                      return (
+                        <div key={i} className="flex items-start gap-2.5 pl-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />
+                          <span className="text-prose leading-relaxed">{trimmed.replace(/^[-•]\s*/, '')}</span>
+                        </div>
+                      );
+                    }
+                    // Numbered list
+                    if (/^\d+[\.\)]\s/.test(trimmed)) {
+                      const num = trimmed.match(/^(\d+)/)?.[1];
+                      const text = trimmed.replace(/^\d+[\.\)]\s*/, '');
+                      return (
+                        <div key={i} className="flex items-start gap-3 pl-2">
+                          <span className="w-6 h-6 rounded-full bg-accent/10 text-accent text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">{num}</span>
+                          <span className="text-prose leading-relaxed" dangerouslySetInnerHTML={{ __html: text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>') }} />
+                        </div>
+                      );
+                    }
+                    // Regular paragraph — handle inline bold
+                    return (
+                      <p key={i} className="text-prose leading-relaxed" dangerouslySetInnerHTML={{ __html: trimmed.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white">$1</strong>') }} />
+                    );
+                  })}
                 </div>
               </>
             )}
