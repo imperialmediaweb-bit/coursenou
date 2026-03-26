@@ -254,54 +254,6 @@ export default function CreateCourse() {
                 )}
               </div>
 
-              {/* Course Type */}
-              <div>
-                <label className="block text-sm font-medium text-prose mb-2">
-                  Course Type
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setCourseType('image')}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors ${
-                      courseType === 'image'
-                        ? 'border-indigo-600 bg-accent/10'
-                        : 'border-border hover:border-border'
-                    }`}
-                  >
-                    <HiOutlinePhotograph className="h-6 w-6 text-accent" />
-                    <div className="text-left">
-                      <p className="font-medium text-white">Image</p>
-                      <p className="text-xs text-muted">With AI images</p>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!isPaid) {
-                        toast.error('Video courses require a paid plan');
-                        return;
-                      }
-                      setCourseType('video');
-                    }}
-                    className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-colors relative ${
-                      courseType === 'video'
-                        ? 'border-indigo-600 bg-accent/10'
-                        : 'border-border hover:border-border'
-                    } ${!isPaid ? 'opacity-60' : ''}`}
-                  >
-                    <HiOutlineVideoCamera className="h-6 w-6 text-purple-600" />
-                    <div className="text-left">
-                      <p className="font-medium text-white">Video</p>
-                      <p className="text-xs text-muted">With AI videos</p>
-                    </div>
-                    {!isPaid && (
-                      <HiOutlineLockClosed className="absolute top-2 right-2 h-4 w-4 text-muted" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
               {/* Language */}
               <div>
                 <label className="block text-sm font-medium text-prose mb-1">
