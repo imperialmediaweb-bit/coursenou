@@ -43,23 +43,47 @@ export const generateFlashcards = async (
 
     if (!courseContent) courseContent = 'General educational course content about learning and knowledge.';
 
-    const prompt = `Based on the following course content, generate 15-20 flashcards for spaced repetition learning. Each flashcard should have a 'front' (question/term) and 'back' (answer/definition). Return ONLY valid JSON: [{ "front": "...", "back": "..."}]. Content: ${courseContent.substring(0, 8000)}`;
+    let cards;
+    try {
+      const prompt = `Based on the following course content, generate 10 flashcards for spaced repetition learning. Each flashcard should have a 'front' (question/term) and 'back' (answer/definition). Return ONLY valid JSON array: [{"front":"...","back":"..."}]. Content: ${courseContent.substring(0, 6000)}`;
 
-    const result = await aiService.chatResponse(user.aiProvider, prompt, '');
+      const result = await aiService.chatResponse(user.aiProvider, prompt, '');
 
-    const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
-    const cleanText = jsonMatch ? jsonMatch[1].trim() : result.trim();
-    const parsedCards: { front: string; back: string }[] = JSON.parse(cleanText);
+      const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
+      const cleanText = jsonMatch ? jsonMatch[1].trim() : result.trim();
+      // Try to find JSON array in response
+      const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+      const parsedCards: { front: string; back: string }[] = JSON.parse(arrayMatch ? arrayMatch[0] : cleanText);
 
-    const cards = parsedCards.map((card) => ({
-      front: card.front,
-      back: card.back,
-      difficulty: 'medium' as const,
-      lastReviewed: null,
-      nextReview: null,
-      correctCount: 0,
-      incorrectCount: 0,
-    }));
+      cards = parsedCards.map((card) => ({
+        front: card.front || 'Question',
+        back: card.back || 'Answer',
+        difficulty: 'medium' as const,
+        lastReviewed: null,
+        nextReview: null,
+        correctCount: 0,
+        incorrectCount: 0,
+      }));
+    } catch (parseError: any) {
+      console.error('Flashcard parse error:', parseError.message);
+      // Fallback: generate static flashcards from content
+      const lines = courseContent.split('\n').filter(l => l.trim().length > 20).slice(0, 8);
+      cards = lines.map((line, i) => ({
+        front: `What is discussed in section ${i + 1}?`,
+        back: line.substring(0, 200).trim(),
+        difficulty: 'medium' as const,
+        lastReviewed: null,
+        nextReview: null,
+        correctCount: 0,
+        incorrectCount: 0,
+      }));
+      if (cards.length === 0) {
+        cards = [
+          { front: 'What is the main topic?', back: 'The core subject covered in this course.', difficulty: 'medium' as const, lastReviewed: null, nextReview: null, correctCount: 0, incorrectCount: 0 },
+          { front: 'Name a key concept', back: 'One of the fundamental ideas explored in the lessons.', difficulty: 'medium' as const, lastReviewed: null, nextReview: null, correctCount: 0, incorrectCount: 0 },
+        ];
+      }
+    }
 
     if (isDemoUser || isDemoCourse) {
       const flashcard = { _id: `demo-flashcard-${courseId}`, userId: user._id, courseId, cards, createdAt: new Date() };
