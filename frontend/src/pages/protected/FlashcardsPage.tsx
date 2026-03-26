@@ -105,9 +105,9 @@ export default function FlashcardsPage() {
   };
 
   const stats = useMemo(() => {
-    if (!flashcard) return { total: 0, mastered: 0, learning: 0, newCards: 0, dueForReview: 0 };
+    if (!flashcard || !flashcard.cards) return { total: 0, mastered: 0, learning: 0, newCards: 0, dueForReview: 0 };
     const now = new Date();
-    const cards = flashcard.cards;
+    const cards = Array.isArray(flashcard.cards) ? flashcard.cards : [];
     const mastered = cards.filter((c: FlashcardItem) => c.correctCount > 3).length;
     const learning = cards.filter(
       (c: FlashcardItem) => c.correctCount > 0 && c.correctCount <= 3
@@ -135,7 +135,7 @@ export default function FlashcardsPage() {
   }
 
   // Empty state - no flashcards generated yet
-  if (!flashcard || !flashcard.cards || flashcard.cards.length === 0) {
+  if (!flashcard || !flashcard.cards || !Array.isArray(flashcard.cards) || flashcard.cards.length === 0) {
     return (
       <div className="min-h-screen bg-base py-8 px-4">
         <div className="max-w-2xl mx-auto">
