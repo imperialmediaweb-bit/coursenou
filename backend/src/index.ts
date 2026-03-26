@@ -32,6 +32,9 @@ import bookmarkRoutes from './routes/bookmarkRoutes';
 import summaryRoutes from './routes/summaryRoutes';
 import duplicateRoutes from './routes/duplicateRoutes';
 import exportRoutes from './routes/exportRoutes';
+import gamificationRoutes from './routes/gamificationRoutes';
+import ogRoutes from './routes/ogRoutes';
+import templateRoutes from './routes/templateRoutes';
 
 const app = express();
 
@@ -95,6 +98,9 @@ app.use('/api/bookmarks', bookmarkRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/duplicate', duplicateRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/gamification', gamificationRoutes);
+app.use('/api/og', ogRoutes);
+app.use('/api/templates', templateRoutes);
 
 // Serve frontend static files in production
 const frontendDist = path.join(__dirname, '../../frontend/dist');

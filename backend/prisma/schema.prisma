@@ -22,6 +22,10 @@ model User {
   paystackCustomerCode  String?
   aiProvider            String    @default("gemini")
   aiCreditsUsed         Int       @default(0)
+  xp                    Int       @default(0)
+  level                 Int       @default(1)
+  streak                Int       @default(0)
+  lastActiveDate        DateTime?
   refreshToken          String?
   resetPasswordToken    String?
   resetPasswordExpires  DateTime?

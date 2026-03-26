@@ -10,6 +10,7 @@ import {
   HiOutlineArrowLeft,
 } from 'react-icons/hi';
 import api from '../../services/api';
+import { fireCelebration } from '../../hooks/useConfetti';
 import { Quiz } from '../../types';
 
 export default function QuizPage() {
@@ -75,6 +76,10 @@ export default function QuizPage() {
         setCertificateId(res.data.certificateId);
       }
       setSubmitted(true);
+      if (res.data.passed) {
+        fireCelebration();
+      }
+      api.post('/gamification/xp', { action: res.data.passed ? 'QUIZ_PASSED' : 'QUIZ_FAILED' }).catch(() => {});
     } catch {
       toast.error('Failed to submit quiz');
     } finally {

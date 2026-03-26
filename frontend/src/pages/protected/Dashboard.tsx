@@ -12,6 +12,7 @@ import {
   HiOutlineCollection,
 } from 'react-icons/hi';
 import api from '../../services/api';
+import XPBar from '../../components/ui/XPBar';
 import { useAuthStore } from '../../store/authStore';
 import { Course } from '../../types';
 
@@ -252,6 +253,11 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* XP Progress */}
+        <div className="mb-8">
+          <XPBar />
         </div>
 
         {/* Course Grid */}

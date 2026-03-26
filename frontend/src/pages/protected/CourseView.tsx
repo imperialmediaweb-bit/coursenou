@@ -20,6 +20,7 @@ import {
   HiOutlinePaperAirplane,
 } from 'react-icons/hi';
 import api from '../../services/api';
+import { fireCelebration } from '../../hooks/useConfetti';
 import { useAuthStore } from '../../store/authStore';
 import { Course, ChatMessage, CourseProgress } from '../../types';
 
@@ -287,6 +288,8 @@ export default function CourseView() {
       await api.post(`/courses/${id}/complete`);
       setCourse((prev) => (prev ? { ...prev, isCompleted: true } : null));
       toast.success('Course marked as complete!');
+      fireCelebration();
+      api.post('/gamification/xp', { action: 'COURSE_COMPLETED' }).catch(() => {});
     } catch {
       toast.error('Failed to mark course as complete');
     } finally {

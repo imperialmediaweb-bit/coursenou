@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import {
   HiOutlineCheckCircle,
@@ -15,6 +15,7 @@ import {
 } from 'react-icons/hi';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { fireCelebration } from '../../hooks/useConfetti';
 import { TopicSuggestion } from '../../types';
 
 const LANGUAGES = [
@@ -34,7 +35,34 @@ const STATUS_MESSAGES = [
 export default function CreateCourse() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
+
+  // Load template if provided in URL
+  useEffect(() => {
+    const templateId = searchParams.get('template');
+    const urlTitle = searchParams.get('title');
+    if (urlTitle) setTitle(urlTitle);
+    if (templateId) {
+      const loadTemplate = async () => {
+        try {
+          const res = await api.get(`/templates/${templateId}`);
+          const tmpl = res.data.data || res.data;
+          if (tmpl) {
+            setTitle(tmpl.title);
+            setNumTopics(tmpl.suggestedTopics?.length || 3);
+            if (tmpl.suggestedTopics) {
+              setTopics(tmpl.suggestedTopics);
+              setStep(2);
+            }
+          }
+        } catch {
+          // Template not found, continue normally
+        }
+      };
+      loadTemplate();
+    }
+  }, [searchParams]);
 
   // Step 1
   const [title, setTitle] = useState('');
@@ -102,6 +130,8 @@ export default function CreateCourse() {
       const courseData = res.data.data || res.data;
       setCourseId(courseData._id || courseData.courseId);
       setStep(4);
+      fireCelebration();
+      api.post('/gamification/xp', { action: 'COURSE_CREATED' }).catch(() => {});
     } catch (err: any) {
       toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to generate course');
       setStep(2);

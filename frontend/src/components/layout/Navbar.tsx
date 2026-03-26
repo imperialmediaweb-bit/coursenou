@@ -38,6 +38,7 @@ const Navbar = () => {
               <>
                 <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
                 <NavLink to="/create" className={navLinkClass}>Create</NavLink>
+                <NavLink to="/templates" className={navLinkClass}>Templates</NavLink>
                 <NavLink to="/billing" className={navLinkClass}>Billing</NavLink>
                 <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
                 <NavLink to="/bookmarks" className={navLinkClass}>Bookmarks</NavLink>
@@ -129,6 +130,7 @@ const Navbar = () => {
                 </div>
                 <NavLink to="/dashboard" className={navLinkClass} onClick={() => setMobileOpen(false)}>Dashboard</NavLink>
                 <NavLink to="/create" className={navLinkClass} onClick={() => setMobileOpen(false)}>Create Course</NavLink>
+                <NavLink to="/templates" className={navLinkClass} onClick={() => setMobileOpen(false)}>Templates</NavLink>
                 <NavLink to="/billing" className={navLinkClass} onClick={() => setMobileOpen(false)}>Billing</NavLink>
                 <NavLink to="/settings" className={navLinkClass} onClick={() => setMobileOpen(false)}>Settings</NavLink>
                 <NavLink to="/bookmarks" className={navLinkClass} onClick={() => setMobileOpen(false)}>Bookmarks</NavLink>

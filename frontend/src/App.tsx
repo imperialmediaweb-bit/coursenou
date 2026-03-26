@@ -30,6 +30,7 @@ const Settings = lazy(() => import('./pages/protected/Settings'));
 const Notifications = lazy(() => import('./pages/protected/Notifications'));
 const FlashcardsPage = lazy(() => import('./pages/protected/FlashcardsPage'));
 const BookmarksPage = lazy(() => import('./pages/protected/BookmarksPage'));
+const TemplatesPage = lazy(() => import('./pages/protected/TemplatesPage'));
 
 // Admin pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
@@ -94,6 +95,7 @@ const App = () => {
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/course/:id/flashcards" element={<FlashcardsPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
+            <Route path="/templates" element={<TemplatesPage />} />
           </Route>
 
           {/* Admin Routes */}
