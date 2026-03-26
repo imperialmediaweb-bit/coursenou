@@ -294,21 +294,9 @@ export default function CourseView() {
     }
   };
 
-  const handleExportPdf = async () => {
-    try {
-      const res = await api.get(`/courses/${id}/export/pdf`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${course?.title || 'course'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success('PDF downloaded!');
-    } catch {
-      toast.error('Failed to export PDF');
-    }
+  const handleExportPdf = () => {
+    window.open(`/api/courses/${id}/export/pdf`, '_blank');
+    toast.success('PDF page opened — press Ctrl+P to save');
   };
 
   const handleExportPpt = () => {

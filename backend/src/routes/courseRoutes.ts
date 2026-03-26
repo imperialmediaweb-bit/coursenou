@@ -23,6 +23,6 @@ router.get('/:id', authMiddleware, getCourseById);
 router.delete('/:id', authMiddleware, deleteCourse);
 router.post('/:id/complete', authMiddleware, completeCourse);
 router.post('/:id/generate-audio', authMiddleware, generateAudio);
-router.get('/:id/export/pdf', authMiddleware, exportPDF);
+router.get('/:id/export/pdf', exportPDF);
 router.get('/:id/export/ppt', authMiddleware, exportPPT);
 export default router;
