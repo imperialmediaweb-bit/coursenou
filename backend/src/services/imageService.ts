@@ -37,16 +37,27 @@ class ImageService {
   }
 
   private async searchPixabay(query: string): Promise<string | null> {
-    const cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-    const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(cleanQuery)}&image_type=photo&orientation=horizontal&per_page=3&safesearch=true`;
+    // Disambiguate tech terms that Pixabay confuses with animals/objects
+    const techTerms: Record<string, string> = {
+      python: 'programming code', java: 'programming code', ruby: 'programming code',
+      rust: 'programming code', swift: 'programming code', go: 'programming code',
+      dart: 'programming code', perl: 'programming code', scala: 'programming code',
+      react: 'web development', node: 'web development', angular: 'web development',
+      django: 'web development', flask: 'web development', laravel: 'web development',
+    };
+    let cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+    const firstWord = cleanQuery.split(' ')[0].toLowerCase();
+    if (techTerms[firstWord]) {
+      cleanQuery = cleanQuery + ' ' + techTerms[firstWord];
+    }
+    const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(cleanQuery)}&image_type=photo&orientation=horizontal&per_page=5&safesearch=true`;
 
     const response = await fetch(url);
     if (!response.ok) return null;
 
     const data: any = await response.json();
     if (data.hits && data.hits.length > 0) {
-      // Pick a random one from top 3 for variety
-      const idx = Math.floor(Math.random() * Math.min(3, data.hits.length));
+      const idx = Math.floor(Math.random() * Math.min(5, data.hits.length));
       return data.hits[idx].webformatURL;
     }
     return null;
