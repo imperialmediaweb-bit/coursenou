@@ -118,7 +118,7 @@ export const generateCourse = async (
           topic.subtopics.map(async (subtopic) => {
             let imageUrl = null;
             try {
-              imageUrl = await imageService.searchImage(`${title} ${subtopic.title}`);
+              imageUrl = await imageService.searchImage(subtopic.imageSearchTerm || subtopic.title);
             } catch {
               // Image fetch failed, continue without image
             }

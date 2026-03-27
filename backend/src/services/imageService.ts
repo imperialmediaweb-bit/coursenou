@@ -46,11 +46,19 @@ class ImageService {
       django: 'web development', flask: 'web development', laravel: 'web development',
     };
     let cleanQuery = query.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-    const firstWord = cleanQuery.split(' ')[0].toLowerCase();
-    if (techTerms[firstWord]) {
-      cleanQuery = cleanQuery + ' ' + techTerms[firstWord];
+    // Check ALL words for tech terms, not just first
+    const words = cleanQuery.toLowerCase().split(/\s+/);
+    let replaced = false;
+    for (const word of words) {
+      if (techTerms[word]) {
+        // Replace the tech term with its disambiguation
+        cleanQuery = cleanQuery.replace(new RegExp(`\\b${word}\\b`, 'i'), techTerms[word]);
+        replaced = true;
+        break;
+      }
     }
-    const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(cleanQuery)}&image_type=photo&orientation=horizontal&per_page=5&safesearch=true`;
+    // If no tech term found, just use the query as-is
+    const url = `https://pixabay.com/api/?key=${process.env.PIXABAY_API_KEY}&q=${encodeURIComponent(cleanQuery)}&image_type=illustration&orientation=horizontal&per_page=5&safesearch=true`;
 
     const response = await fetch(url);
     if (!response.ok) return null;
