@@ -12,7 +12,7 @@ const faqs: FAQItem[] = [
   {
     question: 'What AI models does Coursbit use?',
     answer:
-      'Coursbit uses Google Gemini and OpenAI GPT-4o. You can switch between them from your settings at any time. Both support 23 languages and generate high-quality educational content.',
+      'Coursbit supports Google Gemini, OpenAI GPT-4o, and Anthropic Claude. The system automatically selects the best available provider for optimal results. All providers support 23 languages and generate high-quality educational content.',
   },
   {
     question: 'Is the free plan really free forever?',

@@ -106,7 +106,7 @@ export const generateFlashcards = async (
       },
     });
 
-    if (String(user._id || user._id) !== 'demo-user-id-001') {
+    if (String(user._id || user.id) !== 'demo-user-id-001') {
       await prisma.user.update({
         where: { id: String(user._id) },
         data: { aiCreditsUsed: user.aiCreditsUsed + 1 },

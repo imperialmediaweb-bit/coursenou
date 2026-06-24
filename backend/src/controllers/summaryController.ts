@@ -28,7 +28,7 @@ export const generateSummary = async (
         const prompt = `Create a concise executive summary (200-300 words) of the following course content. Include key takeaways and main concepts covered. Language: ${demoCourse.language}. Content: ${content.substring(0, 8000)}`;
         const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
         user.aiCreditsUsed += 1;
-        if (String(user._id || user._id) !== 'demo-user-id-001') {
+        if (String(user._id || user.id) !== 'demo-user-id-001') {
           await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
         }
         res.status(200).json({ success: true, data: { summary } });
@@ -61,7 +61,7 @@ export const generateSummary = async (
     const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
 
     user.aiCreditsUsed += 1;
-    if (String(user._id || user._id) !== 'demo-user-id-001') {
+    if (String(user._id || user.id) !== 'demo-user-id-001') {
       await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
     }
 

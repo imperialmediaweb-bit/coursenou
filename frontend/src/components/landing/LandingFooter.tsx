@@ -1,34 +1,28 @@
 interface FooterLink {
   label: string;
   href: string;
+  disabled?: boolean;
 }
 
 const productLinks: FooterLink[] = [
   { label: 'Features', href: '#features' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'Blog', href: '/blog' },
-  { label: 'Changelog', href: '#' },
+  { label: 'Changelog — Coming soon', href: '#', disabled: true },
 ];
 
 const companyLinks: FooterLink[] = [
-  { label: 'About', href: '#' },
+  { label: 'About — Coming soon', href: '#', disabled: true },
   { label: 'Contact', href: '/contact' },
   { label: 'Terms', href: '/terms' },
   { label: 'Privacy', href: '/privacy' },
 ];
 
 const resourceLinks: FooterLink[] = [
-  { label: 'Documentation', href: '#' },
-  { label: 'API', href: '#' },
-  { label: 'Status', href: '#' },
+  { label: 'Documentation — Coming soon', href: '#', disabled: true },
+  { label: 'API — Coming soon', href: '#', disabled: true },
+  { label: 'Status — Coming soon', href: '#', disabled: true },
   { label: 'Support', href: '/contact' },
-];
-
-const socialLinks = [
-  { text: '𝕏', href: '#', label: 'Twitter' },
-  { text: 'GH', href: '#', label: 'GitHub' },
-  { text: 'in', href: '#', label: 'LinkedIn' },
-  { text: 'YT', href: '#', label: 'YouTube' },
 ];
 
 function FooterColumn({
@@ -46,12 +40,18 @@ function FooterColumn({
       <ul className="space-y-0.5">
         {links.map((link) => (
           <li key={link.label}>
-            <a
-              href={link.href}
-              className="block text-sm text-prose hover:text-white transition-colors py-1"
-            >
-              {link.label}
-            </a>
+            {link.disabled ? (
+              <span className="block text-sm text-muted/50 py-1 cursor-not-allowed">
+                {link.label}
+              </span>
+            ) : (
+              <a
+                href={link.href}
+                className="block text-sm text-prose hover:text-white transition-colors py-1"
+              >
+                {link.label}
+              </a>
+            )}
           </li>
         ))}
       </ul>
@@ -77,18 +77,6 @@ export default function LandingFooter() {
             <p className="text-sm text-muted mt-3 max-w-xs leading-relaxed">
               AI-powered course generation for educators and creators.
             </p>
-            <div className="flex gap-3 mt-4">
-              {socialLinks.map((social) => (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    aria-label={social.label}
-                    className="text-muted hover:text-accent transition-colors text-sm font-semibold leading-none"
-                  >
-                    {social.text}
-                  </a>
-              ))}
-            </div>
           </div>
 
           {/* Link columns */}
@@ -100,7 +88,7 @@ export default function LandingFooter() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="text-xs text-muted">
-            &copy; 2024 Coursbit. All rights reserved.
+            &copy; {new Date().getFullYear()} Coursbit. All rights reserved.
           </span>
           <span className="text-xs text-muted">
             Made with &hearts; using Gemini &amp; GPT-4o

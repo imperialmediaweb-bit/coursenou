@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import crypto from 'crypto';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -9,6 +10,24 @@ import path from 'path';
 import prisma from './utils/prisma';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
+
+// Startup validation: ensure JWT secrets exist. If not set, generate random
+// ones so the app can still start (useful for local dev / demo), but warn
+// loudly because tokens will not survive restarts.
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = crypto.randomBytes(64).toString('hex');
+  console.warn(
+    'WARNING: JWT_SECRET is not set. A random secret was generated. ' +
+    'Tokens will be invalidated on restart. Set JWT_SECRET in your environment for production.'
+  );
+}
+if (!process.env.JWT_REFRESH_SECRET) {
+  process.env.JWT_REFRESH_SECRET = crypto.randomBytes(64).toString('hex');
+  console.warn(
+    'WARNING: JWT_REFRESH_SECRET is not set. A random secret was generated. ' +
+    'Refresh tokens will be invalidated on restart. Set JWT_REFRESH_SECRET in your environment for production.'
+  );
+}
 
 // Route imports
 import authRoutes from './routes/authRoutes';

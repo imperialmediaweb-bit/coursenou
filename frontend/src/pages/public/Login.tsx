@@ -31,9 +31,19 @@ export default function Login() {
     }
   };
 
-  const fillDemo = () => {
+  const fillDemo = async () => {
     setEmail(DEMO_EMAIL);
     setPassword(DEMO_PASSWORD);
+    setLoading(true);
+    try {
+      await login(DEMO_EMAIL, DEMO_PASSWORD);
+      toast.success('Welcome!');
+      navigate('/dashboard');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

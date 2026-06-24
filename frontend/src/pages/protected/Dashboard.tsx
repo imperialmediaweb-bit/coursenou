@@ -187,48 +187,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Smart Recommendations */}
-        {courses.length > 0 && (
-          <div
-            className="mb-8 rounded-2xl p-6"
-            style={{
-              background: 'linear-gradient(135deg, rgba(108,71,255,0.15) 0%, rgba(108,71,255,0.05) 100%)',
-              border: '1px solid rgba(108,71,255,0.2)',
-            }}
-          >
-            <h3 className="text-sm font-semibold font-sans mb-3 flex items-center gap-2" style={{ color: '#6C47FF' }}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Suggested Next Courses
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {(() => {
-                const topics = courses.map(c => c.title);
-                const suggestions = [
-                  `Advanced ${topics[0] || 'Programming'}`,
-                  `${topics[topics.length - 1] || 'Data Science'} Best Practices`,
-                  `${topics[0] || 'Web Dev'} in Practice`,
-                ];
-                return suggestions.map((s, i) => (
-                  <Link
-                    key={i}
-                    to={`/create?title=${encodeURIComponent(s)}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-sans font-medium transition-all duration-200 hover:brightness-125"
-                    style={{
-                      background: '#0F0F15',
-                      border: '1px solid #1C1C28',
-                      color: '#F0F0FF',
-                    }}
-                  >
-                    <HiOutlinePlus className="w-3.5 h-3.5" style={{ color: '#6C47FF' }} />
-                    {s}
-                  </Link>
-                ));
-              })()}
-            </div>
-          </div>
-        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

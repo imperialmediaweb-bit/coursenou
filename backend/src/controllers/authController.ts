@@ -63,6 +63,7 @@ export const login = async (
     if (email === 'demo@coursbit.com' && password === 'demo123456') {
       const demoUser = {
         _id: 'demo-user-id-001',
+        id: 'demo-user-id-001',
         name: 'Demo User',
         email: 'demo@coursbit.com',
         role: 'user' as const,
@@ -76,13 +77,13 @@ export const login = async (
 
       const accessToken = jwt.sign(
         { userId: demoUser._id },
-        process.env.JWT_SECRET || 'demo-jwt-secret-key-minimum-64-chars-for-security-purposes-here',
+        process.env.JWT_SECRET!,
         { expiresIn: '24h' as any }
       );
 
       const refreshToken = jwt.sign(
         { userId: demoUser._id },
-        process.env.JWT_REFRESH_SECRET || 'demo-refresh-secret-key-minimum-64-chars-for-security-here',
+        process.env.JWT_REFRESH_SECRET!,
         { expiresIn: '30d' as any }
       );
 
@@ -185,15 +186,13 @@ export const refresh = async (
       throw new AppError('Refresh token not found', 401);
     }
 
-    const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET || 'demo-refresh-secret-key-minimum-64-chars-for-security-here';
-    const decoded = jwt.verify(refreshToken, jwtRefreshSecret) as {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as {
       userId: string;
     };
 
     // Demo user refresh bypass
     if (decoded.userId === 'demo-user-id-001') {
-      const jwtSecret = process.env.JWT_SECRET || 'demo-jwt-secret-key-minimum-64-chars-for-security-purposes-here';
-      const newAccessToken = jwt.sign({ userId: 'demo-user-id-001' }, jwtSecret, { expiresIn: '24h' as any });
+      const newAccessToken = jwt.sign({ userId: 'demo-user-id-001' }, process.env.JWT_SECRET!, { expiresIn: '24h' as any });
       res.json({ accessToken: newAccessToken });
       return;
     }

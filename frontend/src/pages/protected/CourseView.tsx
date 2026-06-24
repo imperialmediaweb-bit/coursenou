@@ -249,12 +249,12 @@ export default function CourseView() {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       switch (e.key) {
         case 'ArrowLeft':
-        case 'j':
+        case 'k':
           e.preventDefault();
           navigateSubtopic('prev');
           break;
         case 'ArrowRight':
-        case 'k':
+        case 'j':
           e.preventDefault();
           navigateSubtopic('next');
           break;
@@ -331,7 +331,11 @@ export default function CourseView() {
   };
 
   const handleShare = () => {
-    const shareUrl = `${window.location.origin}/shared/${course?.shareToken}`;
+    if (!course?.shareToken) {
+      toast.error('Share link not available for this course');
+      return;
+    }
+    const shareUrl = `${window.location.origin}/card/${course.shareToken}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success('Share link copied to clipboard!');
   };
@@ -522,8 +526,8 @@ export default function CourseView() {
               <span className="text-xs text-muted ml-1">({avgRating.toFixed(1)})</span>
             )}
           </div>
-          <span className="text-xs text-muted" title="Keyboard shortcuts: Arrow keys/J/K navigate, N=notes, C=chat, S=sidebar">
-            ???
+          <span className="text-xs text-muted cursor-help" title="Keyboard: J/K navigate, N=notes, C=chat, S=sidebar">
+            &#9000;
           </span>
         </div>
       </div>
