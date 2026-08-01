@@ -55,7 +55,8 @@ export const authMiddleware = async (
       (user as any).planExpiresAt = null;
     }
 
-    req.user = user as any;
+    // Alias _id to id so all controllers work identically for real and demo users
+    req.user = { ...user, _id: user.id } as any;
     next();
   } catch (error) {
     if (error instanceof AppError) {

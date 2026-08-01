@@ -37,11 +37,42 @@ export const register = async (
       },
     });
 
-    await emailService.sendWelcome(email, name);
+    // Welcome email must never block registration
+    emailService.sendWelcome(email, name).catch(() => {});
 
-    const { password: _pw, ...userWithoutPassword } = newUser;
+    // Issue tokens immediately so the user is logged in after signup
+    const accessToken = jwt.sign(
+      { userId: newUser.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any }
+    );
+    const refreshToken = jwt.sign(
+      { userId: newUser.id },
+      process.env.JWT_REFRESH_SECRET!,
+      { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any }
+    );
 
-    res.status(201).json({ user: userWithoutPassword });
+    await prisma.user.update({
+      where: { id: newUser.id },
+      data: { refreshToken },
+    });
+
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' as const : 'strict' as const,
+      path: '/',
+    });
+
+    const {
+      password: _pw,
+      refreshToken: _rt,
+      resetPasswordToken: _rp,
+      resetPasswordExpires: _re,
+      ...userSafe
+    } = newUser as any;
+
+    res.status(201).json({ accessToken, user: userSafe });
   } catch (error) {
     next(error);
   }
@@ -138,7 +169,13 @@ export const login = async (
       path: '/',
     });
 
-    const { password: _pw, refreshToken: _rt, ...userWithoutSensitive } = user;
+    const {
+      password: _pw,
+      refreshToken: _rt,
+      resetPasswordToken: _rp2,
+      resetPasswordExpires: _re2,
+      ...userWithoutSensitive
+    } = user as any;
 
     res.json({ accessToken, user: userWithoutSensitive });
   } catch (error) {
