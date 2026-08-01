@@ -8,6 +8,7 @@
   "scripts": {
     "postinstall": "cd backend && npm install && cd ../frontend && npm install",
     "build": "cd frontend && npm run build && cd ../backend && npx prisma generate && PUPPETEER_SKIP_DOWNLOAD=true npm run build",
-    "start": "cd backend && npx prisma db push --accept-data-loss && node dist/index.js"
+    "start": "cd backend && npx prisma db push --accept-data-loss && node dist/index.js",
+    "audit": "node scripts/audit/api-contract.js && node scripts/audit/route-params.js && node scripts/audit/unreachable-ui.js"
   }
 }
