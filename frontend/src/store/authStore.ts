@@ -16,18 +16,23 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: !!localStorage.getItem('accessToken'),
-  isLoading: false,
+  // With a token present the profile has not been fetched yet, so `user` — and
+  // therefore `user.role` — is still null on the first render. Starting at
+  // `false` let the route guards run that render and decide: AdminRoute saw no
+  // admin role and redirected, so opening or refreshing any /admin URL always
+  // bounced to /dashboard, even for an administrator. The guards wait now.
+  isLoading: !!localStorage.getItem('accessToken'),
 
   login: async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     localStorage.setItem('accessToken', res.data.accessToken);
-    set({ user: res.data.user, isAuthenticated: true });
+    set({ user: res.data.user, isAuthenticated: true, isLoading: false });
   },
 
   register: async (name, email, password) => {
     const res = await api.post('/auth/register', { name, email, password });
     localStorage.setItem('accessToken', res.data.accessToken);
-    set({ user: res.data.user, isAuthenticated: true });
+    set({ user: res.data.user, isAuthenticated: true, isLoading: false });
   },
 
   logout: async () => {
@@ -37,7 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       // Continue with local cleanup even if API fails
     }
     localStorage.removeItem('accessToken');
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 
   fetchUser: async () => {

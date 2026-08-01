@@ -117,6 +117,9 @@ export const getUsers = async (
     ]);
 
     res.json({
+      // `data` is the field the shared PaginatedResponse type declares and the
+      // admin screens read; `users` is kept for any older consumer.
+      data: users,
       users,
       total,
       page,
@@ -241,6 +244,9 @@ export const getCourses = async (
     ]);
 
     res.json({
+      // `data` is the field the shared PaginatedResponse type declares and the
+      // admin screens read; `courses` is kept for any older consumer.
+      data: courses,
       courses,
       total,
       page,
@@ -295,6 +301,9 @@ export const getInvoices = async (
     ]);
 
     res.json({
+      // `data` is the field the shared PaginatedResponse type declares and the
+      // admin screens read; `invoices` is kept for any older consumer.
+      data: invoices,
       invoices,
       total,
       page,
