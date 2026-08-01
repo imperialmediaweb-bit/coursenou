@@ -27,24 +27,11 @@ export default function CertificatePage() {
     }
   };
 
-  const handleDownload = async () => {
-    try {
-      setDownloading(true);
-      const res = await api.get(`/certificates/${id}/download`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `certificate-${certificate?.courseName || 'course'}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.success('Certificate downloaded!');
-    } catch {
-      toast.error('Failed to download certificate');
-    } finally {
-      setDownloading(false);
-    }
+  const handleDownload = () => {
+    // Opens the printable certificate page; the user saves it as PDF
+    // via the browser's print dialog (works without server-side PDF tooling).
+    window.open(`/api/certificates/${id}/download`, '_blank');
+    toast.success('Certificate opened — press Ctrl+P to save as PDF');
   };
 
   if (loading) {
