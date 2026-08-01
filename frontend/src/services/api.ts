@@ -21,7 +21,27 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for token refresh
+// Single-flight token refresh: when several requests hit 401 at once
+// (dashboard fires 3-4 calls in parallel), only one refresh request is
+// made — the rest await the same promise and retry with the new token.
+let refreshPromise: Promise<string> | null = null;
+
+const refreshAccessToken = (): Promise<string> => {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_URL}/api/auth/refresh`, {}, { withCredentials: true })
+      .then((response) => {
+        const { accessToken } = response.data;
+        localStorage.setItem('accessToken', accessToken);
+        return accessToken as string;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+};
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -31,13 +51,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const response = await axios.post(
-          `${API_URL}/api/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
-        const { accessToken } = response.data;
-        localStorage.setItem('accessToken', accessToken);
+        const accessToken = await refreshAccessToken();
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return api(originalRequest);
       } catch {

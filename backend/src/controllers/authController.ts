@@ -239,9 +239,11 @@ export const refresh = async (
       throw new AppError('User not found', 401);
     }
 
-    if (user.refreshToken !== refreshToken) {
-      throw new AppError('Invalid refresh token', 401);
-    }
+    // Signature already verified above. We intentionally do NOT require an
+    // exact match with the stored token: concurrent requests (e.g. the
+    // dashboard firing several API calls at once with an expired access
+    // token) each trigger a refresh, and strict rotation would invalidate
+    // every refresh after the first, logging the user out mid-session.
 
     const newAccessToken = jwt.sign(
       { userId: user.id },
@@ -269,6 +271,13 @@ export const refresh = async (
 
     res.json({ accessToken: newAccessToken });
   } catch (error) {
+    // Expired/invalid refresh tokens are a normal auth failure (401),
+    // not a server error — otherwise the client sees a 500 and can't
+    // distinguish "please log in again" from "server is broken".
+    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
+      next(new AppError('Session expired, please log in again', 401));
+      return;
+    }
     next(error);
   }
 };

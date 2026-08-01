@@ -30,6 +30,7 @@ export default function CourseView() {
   const { user } = useAuthStore();
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentTopic, setCurrentTopic] = useState(0);
   const [currentSubtopic, setCurrentSubtopic] = useState(0);
@@ -75,11 +76,18 @@ export default function CourseView() {
   const fetchCourse = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const res = await api.get(`/courses/${id}`);
       setCourse(res.data.data || res.data);
-    } catch {
-      toast.error('Failed to load course');
-      navigate('/dashboard');
+    } catch (err: any) {
+      // Surface the real problem instead of a generic message, and stay on
+      // the page with a retry option so the user is never dead-ended.
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.error;
+      setLoadError(
+        serverMsg ||
+        (status ? `Request failed (HTTP ${status})` : 'Network error — check your connection')
+      );
     } finally {
       setLoading(false);
     }
@@ -381,10 +389,35 @@ export default function CourseView() {
     handleNoteSave(value);
   };
 
-  if (loading || !course) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600" />
+      <div className="min-h-screen bg-base flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent" />
+      </div>
+    );
+  }
+
+  if (loadError || !course) {
+    return (
+      <div className="min-h-screen bg-base flex items-center justify-center px-4">
+        <div className="bg-surface border border-border rounded-2xl p-8 max-w-md w-full text-center">
+          <h2 className="text-lg font-sans font-semibold text-white mb-2">Couldn&apos;t load this course</h2>
+          <p className="text-sm text-prose mb-6">{loadError || 'Course not found'}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={fetchCourse}
+              className="px-5 py-2.5 bg-accent text-white text-sm font-sans font-semibold rounded-xl hover:bg-accent-glow transition-colors"
+            >
+              Try again
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-5 py-2.5 border border-border text-prose text-sm font-sans rounded-xl hover:text-white transition-colors"
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

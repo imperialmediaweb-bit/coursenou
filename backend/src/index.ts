@@ -11,22 +11,23 @@ import prisma from './utils/prisma';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 
-// Startup validation: ensure JWT secrets exist. If not set, generate random
-// ones so the app can still start (useful for local dev / demo), but warn
-// loudly because tokens will not survive restarts.
+// Startup validation: ensure JWT secrets exist. If not set, derive STABLE
+// secrets from DATABASE_URL (unique per deployment, never in source, and —
+// crucially — identical across restarts/redeploys so sessions survive).
+// A purely random fallback would invalidate every user session on deploy.
+const deriveSecret = (label: string): string =>
+  crypto
+    .createHash('sha256')
+    .update(`${label}:${process.env.DATABASE_URL || 'coursbit-local'}`)
+    .digest('hex');
+
 if (!process.env.JWT_SECRET) {
-  process.env.JWT_SECRET = crypto.randomBytes(64).toString('hex');
-  console.warn(
-    'WARNING: JWT_SECRET is not set. A random secret was generated. ' +
-    'Tokens will be invalidated on restart. Set JWT_SECRET in your environment for production.'
-  );
+  process.env.JWT_SECRET = deriveSecret('jwt-access');
+  console.warn('WARNING: JWT_SECRET not set — derived a stable secret from DATABASE_URL. Set JWT_SECRET explicitly for production.');
 }
 if (!process.env.JWT_REFRESH_SECRET) {
-  process.env.JWT_REFRESH_SECRET = crypto.randomBytes(64).toString('hex');
-  console.warn(
-    'WARNING: JWT_REFRESH_SECRET is not set. A random secret was generated. ' +
-    'Refresh tokens will be invalidated on restart. Set JWT_REFRESH_SECRET in your environment for production.'
-  );
+  process.env.JWT_REFRESH_SECRET = deriveSecret('jwt-refresh');
+  console.warn('WARNING: JWT_REFRESH_SECRET not set — derived a stable secret from DATABASE_URL. Set JWT_REFRESH_SECRET explicitly for production.');
 }
 
 // Route imports
@@ -56,6 +57,11 @@ import ogRoutes from './routes/ogRoutes';
 import templateRoutes from './routes/templateRoutes';
 
 const app = express();
+
+// Railway (and most PaaS) sit behind a reverse proxy that sets
+// X-Forwarded-For. Without this, express-rate-limit throws a
+// ValidationError on every request in production.
+app.set('trust proxy', 1);
 
 // Security
 app.use(helmet({
@@ -96,6 +102,12 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Version — lets us verify which build is actually live on Railway
+const BUILD_TIME = new Date().toISOString();
+app.get('/api/version', (_req, res) => {
+  res.json({ buildStarted: BUILD_TIME, node: process.version });
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -122,17 +134,28 @@ app.use('/api/gamification', gamificationRoutes);
 app.use('/api/og', ogRoutes);
 app.use('/api/templates', templateRoutes);
 
-// Serve frontend static files in production
+// Serve frontend static files in production.
+// Hashed assets can be cached forever; index.html must never be cached,
+// otherwise browsers keep loading stale JS bundles after a deploy.
 const frontendDist = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendDist));
+app.use(express.static(frontendDist, {
+  index: false,
+  maxAge: '1y',
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  },
+}));
 
 // API 404 handler (only for /api routes)
 app.use('/api/*', (_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// SPA fallback — serve index.html for all non-API routes
+// SPA fallback — serve index.html for all non-API routes (never cached)
 app.get('*', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
