@@ -1,19 +1,31 @@
 #!/bin/bash
 # Calls every registered API endpoint with a real session and flags any 5xx.
-# A 4xx is fine here (missing body, wrong role, not found); a 5xx means the
-# handler crashed, which is what reaches a user as a broken panel.
-B=http://localhost:4020/api
+#
+# A 4xx is fine here — missing body, wrong role, not found. A 5xx means the
+# handler crashed, which is what reaches a user as a broken panel. A provider
+# with no API key answering 503 and naming itself is a clear refusal rather
+# than a crash, so it is accepted.
+#
+# Requires the app running locally against a database.
+set -u
+B="${BASE_URL:-http://localhost:4020}/api"
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 PASS=0; FAIL=0; FAILED=""
 
-EMAIL="sweep$(date +%s%N)@test.com"
+EMAIL="sweep$(date +%s%N)@test.local"
 T=$(curl -s -X POST $B/auth/register -H 'Content-Type: application/json' \
      -d "{\"name\":\"Sweep\",\"email\":\"$EMAIL\",\"password\":\"password123\"}" \
      | python3 -c "import sys,json;print(json.load(sys.stdin)['accessToken'])")
-A="Authorization: Bearer $T"
 
-# Promote to admin so admin routes are exercised too.
-PGHOST=/tmp PGPORT=5433 PGUSER=postgres psql -q -d coursbit_test \
-  -c "UPDATE \"User\" SET role='admin' WHERE email='$EMAIL';" >/dev/null 2>&1
+# Promote through Prisma rather than psql, which a CI runner does not have.
+node -e "
+const { PrismaClient } = require('$REPO/backend/node_modules/@prisma/client');
+const p = new PrismaClient();
+p.user.update({ where: { email: '$EMAIL' }, data: { role: 'admin', plan: 'monthly',
+  planExpiresAt: new Date(Date.now() + 31536000000) } })
+ .then(() => p.\$disconnect());
+" || exit 1
+
 T=$(curl -s -X POST $B/auth/login -H 'Content-Type: application/json' \
      -d "{\"email\":\"$EMAIL\",\"password\":\"password123\"}" \
      | python3 -c "import sys,json;print(json.load(sys.stdin)['accessToken'])")
@@ -27,7 +39,7 @@ CID=$(curl -s -X POST $B/courses/generate -H 'Content-Type: application/json' -H
       -d "{\"title\":\"Sweep Course\",\"topics\":$TD,\"language\":\"English\",\"type\":\"image\"}" \
       | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(d.get('id') or d.get('_id'))")
 SHARE=$(curl -s $B/courses/$CID -H "$A" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['shareToken'])")
-UID2=$(curl -s $B/auth/me -H "$A" | python3 -c "import sys,json;print(json.load(sys.stdin)['user']['id'])")
+ME=$(curl -s $B/auth/me -H "$A" | python3 -c "import sys,json;print(json.load(sys.stdin)['user']['id'])")
 curl -s -X POST $B/courses/$CID/complete -H "$A" >/dev/null
 CERT=$(curl -s $B/certificates -H "$A" | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(d[0]['id'] if d else '')")
 
@@ -113,15 +125,15 @@ hit POST /paystack/initialize '{"plan":"monthly"}'
 echo "--- admin ---"
 hit GET /admin/stats
 hit GET /admin/users
-hit GET "/admin/users/$UID2"
+hit GET "/admin/users/$ME"
 hit GET /admin/courses
 hit GET /admin/blogs
 hit GET /admin/messages
-hit GET /admin/content
+hit GET /admin/content/terms
 hit GET /admin/invoices
 hit GET /admin/settings
 hit PUT /admin/settings '{"aiProvider":"openai"}'
-hit POST /admin/blogs '{"title":"Sweep post","slug":"sweep-post-'"$(date +%s)"'","content":"body","published":false}'
+hit POST /admin/blogs "{\"title\":\"Sweep post $(date +%s)\",\"content\":\"body\",\"published\":false}"
 hit GET /export/admin/csv
 hit GET /export/bulk
 

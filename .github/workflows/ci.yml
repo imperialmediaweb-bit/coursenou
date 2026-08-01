@@ -1,0 +1,104 @@
+name: CI
+
+# Runs the same checks by hand-testing used to catch: the static contract
+# audits, then the app booted against a real database and driven through a
+# real browser as both a learner and an administrator.
+#
+# The browser suites are the important part. A route guard that silently
+# redirects, or a page reading a response the wrong way, both render something
+# that looks healthy — only clicking through and asserting the resulting URL
+# catches them.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: coursbit_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/coursbit_ci
+      # Deterministic secrets so sessions survive the server restart mid-run.
+      JWT_SECRET: ci-jwt-secret-at-least-sixty-four-characters-long-for-this-test-run
+      JWT_REFRESH_SECRET: ci-refresh-secret-at-least-sixty-four-characters-long-for-tests
+      PORT: 4020
+      BASE_URL: http://localhost:4020
+      FRONTEND_URL: http://localhost:4020
+      # The suites deliberately hammer endpoints that are rate limited.
+      RATE_LIMIT_GLOBAL_MAX: 100000
+      RATE_LIMIT_AUTH_MAX: 100000
+      RATE_LIMIT_REGISTER_MAX: 100000
+      RATE_LIMIT_AI_MAX: 100000
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type-check backend
+        run: cd backend && npx tsc --noEmit
+
+      - name: Type-check frontend
+        run: cd frontend && npx tsc --noEmit
+
+      # No database or running server needed — these read the source.
+      - name: Static audits (routes, response shapes, params, unreachable UI)
+        run: npm run audit
+
+      - name: Build
+        run: npm run build
+
+      - name: Prepare database
+        run: cd backend && npx prisma db push --skip-generate
+
+      - name: Start the app
+        run: |
+          node backend/dist/index.js > /tmp/server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf "$BASE_URL/api/health" > /dev/null; then
+              echo "app is up"; exit 0
+            fi
+            sleep 2
+          done
+          echo "app did not start"; cat /tmp/server.log; exit 1
+
+      - name: Endpoint sweep (every route, no server errors)
+        run: bash scripts/audit/endpoint-sweep.sh
+
+      - name: Install Chromium for the browser suites
+        run: npx --yes playwright@1.49.1 install --with-deps chromium
+
+      - name: Browser suite — learner
+        run: npx --yes --package playwright@1.49.1 -- node scripts/test/user-flow.js
+
+      - name: Browser suite — administrator
+        run: npx --yes --package playwright@1.49.1 -- node scripts/test/admin-flow.js
+
+      - name: Server log
+        if: always()
+        run: tail -100 /tmp/server.log || true
