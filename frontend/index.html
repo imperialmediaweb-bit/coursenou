@@ -38,11 +38,19 @@
         <div class="ring"></div>
         <div class="stuck">
           <p>This is taking longer than usual. The app may have been updated while your tab was open.</p>
-          <button onclick="sessionStorage.removeItem('coursbit:chunk-reloaded');location.reload(true)">Reload</button>
+          <button id="boot-reload" type="button">Reload</button>
         </div>
       </div>
     </div>
     <script>
+      // Bound here rather than as an onclick attribute — the site's
+      // Content-Security-Policy sets script-src-attr 'none', which blocks
+      // every inline handler.
+      document.getElementById('boot-reload').addEventListener('click', function () {
+        sessionStorage.removeItem('coursbit:chunk-reloaded');
+        location.reload();
+      });
+
       // If React has not replaced #boot within 12s, something failed to load.
       // Offer a reload rather than leaving the user on an empty screen.
       setTimeout(function () {
