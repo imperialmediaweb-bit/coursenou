@@ -21,6 +21,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { AdminStats } from '../../types';
+import AiProviderSetting from '../../components/admin/AiProviderSetting';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -214,6 +215,10 @@ const AdminDashboard = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <AiProviderSetting />
       </div>
     </div>
   );

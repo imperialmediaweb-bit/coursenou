@@ -10,6 +10,7 @@ import path from 'path';
 import prisma from './utils/prisma';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
+import { seedLegalPages } from './utils/seed';
 
 // Startup validation: ensure JWT secrets exist. If not set, derive STABLE
 // secrets from DATABASE_URL (unique per deployment, never in source, and —
@@ -197,6 +198,8 @@ app.listen(parseInt(PORT as string), '0.0.0.0', async () => {
       });
       console.log('Demo account seeded: demo@coursbit.com / demo123456');
     }
+
+    await seedLegalPages();
   } catch (err: any) {
     console.error('DB connection issue:', err.message);
     console.log('Demo login still works without DB');

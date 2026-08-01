@@ -18,7 +18,7 @@ const router = Router();
 router.post('/generate-topics', authMiddleware, aiLimiter, generateTopics);
 router.post('/generate', authMiddleware, aiLimiter, generateCourse);
 router.get('/', authMiddleware, getCourses);
-router.get('/share/:token', getSharedCourse);
+router.get('/share/:shareToken', getSharedCourse);
 router.get('/:id', authMiddleware, getCourseById);
 router.delete('/:id', authMiddleware, deleteCourse);
 router.post('/:id/complete', authMiddleware, completeCourse);

@@ -4,6 +4,7 @@ import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
+import { getAiProvider } from '../services/settingsService';
 
 export const generateSummary = async (
   req: AuthRequest,
@@ -26,7 +27,7 @@ export const generateSummary = async (
       }
       if (content) {
         const prompt = `Create a concise executive summary (200-300 words) of the following course content. Include key takeaways and main concepts covered. Language: ${demoCourse.language}. Content: ${content.substring(0, 8000)}`;
-        const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
+        const summary = await aiService.chatResponse(await getAiProvider(), prompt, '');
         user.aiCreditsUsed += 1;
         if (String(user._id || user.id) !== 'demo-user-id-001') {
           await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
@@ -58,7 +59,7 @@ export const generateSummary = async (
 
     const prompt = `Create a concise executive summary (200-300 words) of the following course content. Include key takeaways and main concepts covered. Language: ${course.language}. Content: ${content.substring(0, 8000)}`;
 
-    const summary = await aiService.chatResponse(user.aiProvider, prompt, '');
+    const summary = await aiService.chatResponse(await getAiProvider(), prompt, '');
 
     user.aiCreditsUsed += 1;
     if (String(user._id || user.id) !== 'demo-user-id-001') {

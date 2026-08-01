@@ -24,6 +24,35 @@ export const getCertificates = async (
   }
 };
 
+/**
+ * A single certificate.
+ *
+ * The certificate page has always requested this, but no such route existed —
+ * the request fell through to the API's 404 handler, so opening a certificate
+ * showed "Certificate not found" no matter what. Public by unguessable cuid,
+ * matching the download route, so a shared link works for the recipient too.
+ */
+export const getCertificateById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const certificate = await prisma.certificate.findUnique({
+      where: { id: req.params.id },
+      include: { course: { select: { title: true } } },
+    });
+
+    if (!certificate) {
+      throw new AppError('Certificate not found', 404);
+    }
+
+    res.status(200).json({ success: true, data: certificate });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const downloadCertificate = async (
   req: AuthRequest,
   res: Response,

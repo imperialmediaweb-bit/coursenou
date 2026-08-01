@@ -19,7 +19,9 @@ export default function CertificatePage() {
     try {
       setLoading(true);
       const res = await api.get(`/certificates/${id}`);
-      setCertificate(res.data);
+      // Every endpoint wraps its payload as { success, data }; reading res.data
+      // directly gave the envelope, not the certificate.
+      setCertificate(res.data?.data ?? res.data);
     } catch {
       toast.error('Failed to load certificate');
     } finally {

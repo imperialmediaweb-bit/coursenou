@@ -15,7 +15,7 @@ export default function SharedCourse() {
     const fetchCourse = async () => {
       try {
         const res = await api.get(`/courses/share/${shareToken}`);
-        setCourse(res.data);
+        setCourse(res.data?.data ?? res.data);
       } catch (err: any) {
         if (err.response?.status === 404) {
           setNotFound(true);

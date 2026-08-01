@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { emailService } from '../services/emailService';
+import { getAiProvider, setAiProvider, configuredProviders, AI_PROVIDERS, AiProvider } from '../services/settingsService';
 
 export const getStats = async (
   _req: AuthRequest,
@@ -317,6 +318,26 @@ export const getBlogs = async (
   }
 };
 
+/**
+ * A single blog post for the admin editor. The edit screen has always
+ * requested this; without the route it 404'd and the form opened empty.
+ */
+export const getBlogById = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const blog = await prisma.blog.findUnique({ where: { id: req.params.id } });
+    if (!blog) {
+      throw new AppError('Blog post not found', 404);
+    }
+    res.json(blog);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const createBlog = async (
   req: AuthRequest,
   res: Response,
@@ -476,6 +497,47 @@ export const updateContentPage = async (
       update: { content },
     });
     res.json(page);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/** Platform settings the owner controls (currently the AI provider). */
+export const getSettings = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    res.json({
+      aiProvider: await getAiProvider(),
+      providers: AI_PROVIDERS,
+      configured: configuredProviders(),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSettings = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { aiProvider } = req.body;
+    if (!AI_PROVIDERS.some((p) => p.value === aiProvider)) {
+      throw new AppError('Invalid AI provider', 400);
+    }
+    if (!configuredProviders()[aiProvider as AiProvider]) {
+      throw new AppError(
+        `No API key is configured for ${aiProvider}. Add it in the environment first.`,
+        400
+      );
+    }
+
+    await setAiProvider(aiProvider);
+    res.json({ aiProvider, providers: AI_PROVIDERS, configured: configuredProviders() });
   } catch (error) {
     next(error);
   }

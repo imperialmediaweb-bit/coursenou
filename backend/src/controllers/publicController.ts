@@ -58,6 +58,11 @@ export const getContentPage = async (
 ): Promise<void> => {
   try {
     const page = await prisma.contentPage.findFirst({ where: { slug: req.params.slug } });
+    // Returning null with a 200 made the client render its "Page Not Found"
+    // state while believing the request succeeded.
+    if (!page) {
+      throw new AppError('Page not found', 404);
+    }
     res.json(page);
   } catch (error) {
     next(error);

@@ -96,7 +96,7 @@ export default function QuizPage() {
     try {
       setLoading(true);
       const res = await api.post(`/quiz/generate/${id}`);
-      setQuiz(res.data);
+      setQuiz(res.data?.data ?? res.data);
       setCurrentQuestion(0);
       setSelectedAnswers({});
       setSubmitted(false);

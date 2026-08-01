@@ -25,7 +25,9 @@ export default function BookmarksPage() {
     try {
       setLoading(true);
       const res = await api.get('/bookmarks');
-      setBookmarks(res.data);
+      // The API answers { success, data }; assigning res.data stored the
+      // envelope, and filtering it as an array crashed the page.
+      setBookmarks(res.data?.data ?? res.data ?? []);
     } catch {
       toast.error('Failed to load bookmarks');
     } finally {

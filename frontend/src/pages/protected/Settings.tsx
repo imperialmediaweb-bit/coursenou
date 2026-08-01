@@ -24,9 +24,6 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // AI Provider
-  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai' | 'claude'>(user?.aiProvider || 'gemini');
-  const [savingProvider, setSavingProvider] = useState(false);
 
   // Delete Account
   const [deleteConfirm, setDeleteConfirm] = useState('');
@@ -40,7 +37,7 @@ export default function Settings() {
     }
     try {
       setSavingProfile(true);
-      const res = await api.put('/auth/profile', { name: name.trim(), email: email.trim() });
+      const res = await api.put('/users/profile', { name: name.trim(), email: email.trim() });
       updateUser(res.data);
       toast.success('Profile updated successfully');
     } catch (err: unknown) {
@@ -66,7 +63,7 @@ export default function Settings() {
     }
     try {
       setSavingPassword(true);
-      await api.put('/auth/password', {
+      await api.put('/users/password', {
         currentPassword,
         newPassword,
       });
@@ -82,19 +79,6 @@ export default function Settings() {
     }
   };
 
-  const handleSaveProvider = async () => {
-    try {
-      setSavingProvider(true);
-      await api.put('/auth/ai-provider', { aiProvider });
-      updateUser({ aiProvider });
-      toast.success('AI provider updated successfully');
-    } catch {
-      toast.error('Failed to update AI provider');
-    } finally {
-      setSavingProvider(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== 'DELETE') {
       toast.error('Please type DELETE to confirm');
@@ -102,7 +86,7 @@ export default function Settings() {
     }
     try {
       setDeleting(true);
-      await api.delete('/auth/account');
+      await api.delete('/users/account');
       toast.success('Account deleted');
       logout();
     } catch {
@@ -127,21 +111,27 @@ export default function Settings() {
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-prose mb-1">Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-prose mb-1">Name</label>
               <input
+                id="name"
+                name="name"
+                autoComplete="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-border bg-base text-white placeholder-muted rounded-lg focus:ring-2 focus:ring-accent/40 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-prose mb-1">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-prose mb-1">Email</label>
               <input
+                id="email"
+                name="email"
+                autoComplete="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-border bg-base text-white placeholder-muted rounded-lg focus:ring-2 focus:ring-accent/40 focus:border-accent outline-none transition-colors"
               />
             </div>
             <button
@@ -167,36 +157,39 @@ export default function Settings() {
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Current Password
-              </label>
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-prose mb-1">Current Password</label>
               <input
+                id="currentPassword"
+                name="currentPassword"
+                autoComplete="current-password"
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-border bg-base text-white placeholder-muted rounded-lg focus:ring-2 focus:ring-accent/40 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                New Password
-              </label>
+              <label htmlFor="newPassword" className="block text-sm font-medium text-prose mb-1">New Password</label>
               <input
+                id="newPassword"
+                name="newPassword"
+                autoComplete="new-password"
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-border bg-base text-white placeholder-muted rounded-lg focus:ring-2 focus:ring-accent/40 focus:border-accent outline-none transition-colors"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-prose mb-1">
-                Confirm New Password
-              </label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-prose mb-1">Confirm New Password</label>
               <input
+                id="confirmPassword"
+                name="confirmPassword"
+                autoComplete="new-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-accent outline-none transition-colors"
+                className="w-full px-4 py-2.5 border border-border bg-base text-white placeholder-muted rounded-lg focus:ring-2 focus:ring-accent/40 focus:border-accent outline-none transition-colors"
               />
             </div>
             <button

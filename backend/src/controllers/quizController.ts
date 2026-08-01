@@ -5,6 +5,7 @@ import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
 import { notificationService } from '../services/notificationService';
+import { getAiProvider } from '../services/settingsService';
 
 export const generateQuiz = async (
   req: AuthRequest,
@@ -30,7 +31,7 @@ export const generateQuiz = async (
         courseContent = 'General knowledge course content for demo purposes.';
       }
       const questions = await aiService.generateQuiz(
-        req.user!.aiProvider,
+        await getAiProvider(),
         courseContent,
         demoCourse?.language || 'English',
         10
@@ -60,7 +61,7 @@ export const generateQuiz = async (
       .join('\n');
 
     const questions = await aiService.generateQuiz(
-      req.user!.aiProvider,
+      await getAiProvider(),
       courseContent,
       course.language,
       10

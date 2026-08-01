@@ -8,7 +8,9 @@ import {
   getCourses,
   deleteCourse,
   getInvoices,
-  getBlogs,
+  getBlogs, getBlogById,
+  getSettings,
+  updateSettings,
   createBlog,
   updateBlog,
   deleteBlog,
@@ -29,7 +31,10 @@ router.delete('/users/:id', deleteUser);
 router.get('/courses', getCourses);
 router.delete('/courses/:id', deleteCourse);
 router.get('/invoices', getInvoices);
+router.get('/settings', getSettings);
+router.put('/settings', updateSettings);
 router.get('/blogs', getBlogs);
+router.get('/blogs/:id', getBlogById);
 router.post('/blogs', createBlog);
 router.put('/blogs/:id', updateBlog);
 router.delete('/blogs/:id', deleteBlog);

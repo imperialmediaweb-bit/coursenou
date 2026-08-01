@@ -13,6 +13,7 @@ import { certificateService } from '../services/certificateService';
 import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
 import { PLAN_LIMITS } from '../utils/planLimits';
+import { getAiProvider } from '../services/settingsService';
 
 const generateTopicsSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -55,7 +56,7 @@ export const generateTopics = async (
       );
     }
 
-    const topics = await aiService.generateTopics(user.aiProvider, title, language, numTopics);
+    const topics = await aiService.generateTopics(await getAiProvider(), title, language, numTopics);
 
     if (String(user._id || user.id) !== 'demo-user-id-001') {
       try {
@@ -107,7 +108,7 @@ export const generateCourse = async (
     let courseContent;
     try {
       courseContent = await aiService.generateCourse(
-        user.aiProvider,
+        await getAiProvider(),
         topics,
         type,
         language,
@@ -327,7 +328,14 @@ export const getSharedCourse = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const course = await prisma.course.findUnique({ where: { shareToken: req.params.shareToken } });
+    // The route used to declare ':token' while this read req.params.shareToken,
+    // so the lookup ran with undefined and every share link answered 500.
+    const { shareToken } = req.params;
+    if (!shareToken) {
+      throw new AppError('Shared course not found', 404);
+    }
+
+    const course = await prisma.course.findUnique({ where: { shareToken } });
     if (!course) {
       throw new AppError('Shared course not found', 404);
     }

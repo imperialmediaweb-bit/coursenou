@@ -4,6 +4,7 @@ import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
+import { getAiProvider } from '../services/settingsService';
 
 // In-memory flashcard store for demo users
 const demoFlashcards = new Map<string, any>();
@@ -47,7 +48,7 @@ export const generateFlashcards = async (
     try {
       const prompt = `Based on the following course content, generate 10 flashcards for spaced repetition learning. Each flashcard should have a 'front' (question/term) and 'back' (answer/definition). Return ONLY valid JSON array: [{"front":"...","back":"..."}]. Content: ${courseContent.substring(0, 6000)}`;
 
-      const result = await aiService.chatResponse(user.aiProvider, prompt, '');
+      const result = await aiService.chatResponse(await getAiProvider(), prompt, '');
 
       const jsonMatch = result.match(/```(?:json)?\s*([\s\S]*?)```/);
       const cleanText = jsonMatch ? jsonMatch[1].trim() : result.trim();
