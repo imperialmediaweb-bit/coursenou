@@ -18,8 +18,14 @@ export const authLimiter = rateLimit({
 
 export const aiLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 20,
-  message: { error: 'AI generation limit reached. Please try again later.' },
+  // Each course costs 2 calls (topics + generation), and users legitimately
+  // iterate on a course before they're happy with it. 20/hour locked people
+  // out after ~10 attempts, which read as "generation is broken".
+  max: 120,
+  message: {
+    error:
+      'You have reached the hourly generation limit. Please wait a few minutes and try again.',
+  },
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: any) => req.user?._id?.toString() || req.ip,

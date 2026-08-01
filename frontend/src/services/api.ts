@@ -7,6 +7,9 @@ const API_URL = import.meta.env.VITE_API_URL || '';
 const api = axios.create({
   baseURL: `${API_URL}/api`,
   withCredentials: true,
+  // AI generation legitimately takes a couple of minutes; without an explicit
+  // timeout a stalled request hangs forever with no feedback.
+  timeout: 300000,
   headers: {
     'Content-Type': 'application/json',
   },

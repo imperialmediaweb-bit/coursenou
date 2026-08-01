@@ -76,6 +76,7 @@ export default function CreateCourse() {
 
   // Step 3
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [statusIndex, setStatusIndex] = useState(0);
 
   // Step 4
@@ -119,6 +120,7 @@ export default function CreateCourse() {
   const handleGenerateCourse = async () => {
     try {
       setGenerating(true);
+      setGenerateError(null);
       setStatusIndex(0);
       setStep(3);
       const res = await api.post('/courses/generate', {
@@ -133,7 +135,19 @@ export default function CreateCourse() {
       fireCelebration();
       api.post('/gamification/xp', { action: 'COURSE_CREATED' }).catch(() => {});
     } catch (err: any) {
-      toast.error(err.response?.data?.error || err.response?.data?.message || 'Failed to generate course');
+      // A toast disappears before the user reads it, and dropping them back on
+      // step 2 with no explanation looks like "nothing happened". Keep the
+      // reason on screen instead.
+      const msg =
+        err.code === 'ECONNABORTED'
+          ? 'Generation took too long and timed out. Try again with fewer topics.'
+          : err.response?.status === 429
+          ? 'You have reached the hourly generation limit. Please wait a few minutes and try again.'
+          : err.response?.data?.error ||
+            err.response?.data?.message ||
+            'Could not generate the course. Please try again.';
+      setGenerateError(msg);
+      toast.error(msg);
       setStep(2);
     } finally {
       setGenerating(false);
@@ -309,6 +323,18 @@ export default function CreateCourse() {
             <p className="text-muted mb-6">
               Edit, reorder, or remove topics before generating your course.
             </p>
+
+            {generateError && (
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+                <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-medium text-red-300">Generation failed</p>
+                  <p className="mt-0.5 text-sm text-red-200/80">{generateError}</p>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4 mb-6">
               {topics.map((topic, tIndex) => (

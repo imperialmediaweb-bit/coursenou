@@ -205,10 +205,36 @@ Requirements:
     type: 'image' | 'video',
     language: string
   ): Promise<TopicContent[]> {
-    const courseContent: TopicContent[] = [];
+    // Topics are generated concurrently (bounded) instead of one after
+    // another. Sequentially, a 3-topic course meant 3 chained AI calls and
+    // could exceed the platform's request timeout, which surfaced to users
+    // as "generation started, then nothing happened".
+    const CONCURRENCY = 3;
+    const results: TopicContent[] = new Array(topics.length);
+    let cursor = 0;
 
-    for (const topic of topics) {
-      const prompt = `Generate detailed educational content for the topic: "${topic.title}" in ${language}.
+    const worker = async (): Promise<void> => {
+      while (true) {
+        const index = cursor++;
+        if (index >= topics.length) return;
+        results[index] = await this.generateTopicContent(provider, topics[index], language);
+      }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, topics.length) }, () => worker())
+    );
+
+    return results;
+  }
+
+  /** Generates the lesson bodies for a single topic, with a safe fallback. */
+  private async generateTopicContent(
+    provider: AIProvider,
+    topic: TopicResult,
+    language: string
+  ): Promise<TopicContent> {
+    const prompt = `Generate detailed educational content for the topic: "${topic.title}" in ${language}.
 
 For each of the following subtopics, provide comprehensive educational content (300-500 words each):
 ${topic.subtopics.map((s, i) => `${i + 1}. ${s}`).join('\n')}
@@ -229,23 +255,19 @@ Requirements:
 - All content must be in ${language}
 - imageSearchTerm should be in English for image search APIs`;
 
-      try {
-        const result = await this.generate(provider, prompt);
-        const subtopics = this.parseJSON<SubtopicContent[]>(result);
-        courseContent.push({ title: topic.title, subtopics });
-      } catch (err: any) {
-        console.error(`Failed to generate content for topic "${topic.title}":`, err.message);
-        // Fallback: create basic content from subtopic names
-        const fallbackSubtopics = topic.subtopics.map(sub => ({
-          title: sub,
-          content: `This section covers ${sub} as part of ${topic.title}. This is an important concept that builds on fundamental principles and provides practical knowledge for learners.\n\nKey points about ${sub}:\n\n1. **Understanding the basics** — ${sub} is a core component of ${topic.title} that every learner should master.\n\n2. **Practical applications** — The concepts covered here have real-world applications across many fields.\n\n3. **Building knowledge** — By studying ${sub}, you develop a deeper understanding of the overall subject matter.`,
-          imageSearchTerm: `${topic.title} ${sub}`,
-        }));
-        courseContent.push({ title: topic.title, subtopics: fallbackSubtopics });
-      }
+    try {
+      const result = await this.generate(provider, prompt);
+      const subtopics = this.parseJSON<SubtopicContent[]>(result);
+      return { title: topic.title, subtopics };
+    } catch (err: any) {
+      console.error(`Failed to generate content for topic "${topic.title}":`, err.message);
+      const fallbackSubtopics = topic.subtopics.map((sub) => ({
+        title: sub,
+        content: `## ${sub}\n\nThis section covers ${sub} as part of ${topic.title}. Understanding this topic is essential for building a solid foundation.\n\n**Key Points**\n\n- **Core Understanding** — ${sub} forms an important part of this subject area.\n- **Practical Application** — The concepts here have direct real-world applications.\n- **Building Blocks** — Each concept builds on the previous one.\n\n### Summary\n\nTake time to review the key points above and practice applying them.`,
+        imageSearchTerm: `${topic.title} ${sub}`,
+      }));
+      return { title: topic.title, subtopics: fallbackSubtopics };
     }
-
-    return courseContent;
   }
 
   async generateQuiz(
