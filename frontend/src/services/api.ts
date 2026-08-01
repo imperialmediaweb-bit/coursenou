@@ -42,8 +42,28 @@ const refreshAccessToken = (): Promise<string> => {
   return refreshPromise;
 };
 
+// The backend moved from MongoDB (`_id`) to Prisma (`id`), but the UI and
+// types were written against `_id`. Rather than touch every component, we
+// mirror `id` -> `_id` on every response object so both always work.
+const addIdAlias = (value: any): any => {
+  if (Array.isArray(value)) return value.map(addIdAlias);
+  if (value && typeof value === 'object' && !(value instanceof Date)) {
+    if (value.id !== undefined && value._id === undefined) {
+      value._id = value.id;
+    }
+    for (const key of Object.keys(value)) {
+      const child = value[key];
+      if (child && typeof child === 'object') addIdAlias(child);
+    }
+  }
+  return value;
+};
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data) addIdAlias(response.data);
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
