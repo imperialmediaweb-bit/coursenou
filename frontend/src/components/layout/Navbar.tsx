@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -45,6 +46,8 @@ const Navbar = () => {
                 {user?.role === 'admin' && (
                   <NavLink to="/admin" className={navLinkClass}>Admin</NavLink>
                 )}
+
+                <NotificationBell />
 
                 {/* User Dropdown */}
                 <div className="relative ml-2">
@@ -134,6 +137,7 @@ const Navbar = () => {
                 <NavLink to="/billing" className={navLinkClass} onClick={() => setMobileOpen(false)}>Billing</NavLink>
                 <NavLink to="/settings" className={navLinkClass} onClick={() => setMobileOpen(false)}>Settings</NavLink>
                 <NavLink to="/bookmarks" className={navLinkClass} onClick={() => setMobileOpen(false)}>Bookmarks</NavLink>
+                <NavLink to="/notifications" className={navLinkClass} onClick={() => setMobileOpen(false)}>Notifications</NavLink>
                 {user?.role === 'admin' && (
                   <NavLink to="/admin" className={navLinkClass} onClick={() => setMobileOpen(false)}>Admin</NavLink>
                 )}

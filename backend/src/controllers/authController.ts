@@ -7,6 +7,7 @@ import prisma from '../utils/prisma';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { emailService } from '../services/emailService';
+import { notificationService } from '../services/notificationService';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -37,8 +38,9 @@ export const register = async (
       },
     });
 
-    // Welcome email must never block registration
+    // Neither the welcome email nor the in-app notification may block signup
     emailService.sendWelcome(email, name).catch(() => {});
+    notificationService.welcome(newUser.id, name).catch(() => {});
 
     // Issue tokens immediately so the user is logged in after signup
     const accessToken = jwt.sign(

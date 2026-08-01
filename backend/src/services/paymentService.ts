@@ -1,32 +1,68 @@
-
 import prisma from '../utils/prisma';
 import { emailService } from './emailService';
+import { notificationService } from './notificationService';
+
+type Provider = 'stripe' | 'paypal' | 'razorpay' | 'paystack';
+type BillingPlan = 'monthly' | 'yearly';
+
+/** Adds one billing period to a starting point. */
+const addPeriod = (from: Date, plan: BillingPlan): Date => {
+  const next = new Date(from.getTime());
+  if (plan === 'monthly') next.setMonth(next.getMonth() + 1);
+  else next.setFullYear(next.getFullYear() + 1);
+  return next;
+};
+
+/**
+ * Renewals must extend the time the customer already paid for. Computing the
+ * new expiry from `now` silently discarded whatever was left on the current
+ * period whenever a payment arrived early.
+ */
+const extendFrom = (currentExpiry: Date | null | undefined, plan: BillingPlan): Date => {
+  const now = new Date();
+  const base = currentExpiry && currentExpiry > now ? new Date(currentExpiry) : now;
+  return addPeriod(base, plan);
+};
 
 class PaymentService {
+  /**
+   * Providers retry webhooks until they get a 2xx, and a retry used to create
+   * a second invoice and send a second email. An invoice row keyed by the
+   * provider's own event id makes replays no-ops.
+   */
+  private async alreadyProcessed(eventId?: string): Promise<boolean> {
+    if (!eventId) return false;
+    const existing = await prisma.invoice.findFirst({
+      where: { providerInvoiceId: eventId },
+      select: { id: true },
+    });
+    return !!existing;
+  }
+
   async activateSubscription(params: {
     userId: string;
-    plan: 'monthly' | 'yearly';
-    provider: 'stripe' | 'paypal' | 'razorpay' | 'paystack';
+    plan: BillingPlan;
+    provider: Provider;
     providerId: string;
     amount: number;
     currency: string;
     receiptUrl?: string;
+    eventId?: string;
   }): Promise<any> {
-    const { userId, plan, provider, providerId, amount, currency, receiptUrl } = params;
+    const { userId, plan, provider, providerId, amount, currency, receiptUrl, eventId } =
+      params;
+
+    if (await this.alreadyProcessed(eventId)) {
+      console.log(`Skipping duplicate ${provider} event ${eventId}`);
+      return prisma.user.findUnique({ where: { id: userId } });
+    }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error('User not found');
     }
 
-    // Set plan and expiration
-    const now = new Date();
-    let planExpiresAt: Date;
-    if (plan === 'monthly') {
-      planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
-    } else {
-      planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
-    }
+    const planExpiresAt = extendFrom(user.planExpiresAt, plan);
 
     // Save provider subscription ID
     const providerData: any = { plan, planExpiresAt };
@@ -50,7 +86,6 @@ class PaymentService {
       data: providerData,
     });
 
-    // Create invoice
     await prisma.invoice.create({
       data: {
         userId: user.id,
@@ -60,13 +95,10 @@ class PaymentService {
         provider,
         status: 'paid',
         receiptUrl: receiptUrl || null,
-        providerInvoiceId: providerId,
+        providerInvoiceId: eventId || providerId,
       },
     });
 
-    // Create subscription record
-    const startDate = new Date();
-    const endDate = new Date(updatedUser.planExpiresAt!);
     await prisma.subscription.upsert({
       where: {
         userId_provider: { userId: user.id, provider },
@@ -76,28 +108,30 @@ class PaymentService {
         provider,
         planType: plan,
         status: 'active',
-        startDate,
-        endDate,
+        startDate: new Date(),
+        endDate: planExpiresAt,
         providerId,
       },
       update: {
         planType: plan,
         status: 'active',
-        startDate,
-        endDate,
+        endDate: planExpiresAt,
         providerId,
       },
     });
 
-    // Send confirmation email
-    await emailService.sendSubscriptionConfirmation(
-      updatedUser.email,
-      updatedUser.name,
-      plan,
-      amount,
-      currency,
-      endDate
-    );
+    // Notifying must never fail the payment itself — the money has moved.
+    await Promise.allSettled([
+      emailService.sendSubscriptionConfirmation(
+        updatedUser.email,
+        updatedUser.name,
+        plan,
+        amount,
+        currency,
+        planExpiresAt
+      ),
+      notificationService.subscriptionActivated(user.id, plan, planExpiresAt),
+    ]);
 
     return updatedUser as any;
   }
@@ -108,7 +142,6 @@ class PaymentService {
       throw new Error('User not found');
     }
 
-    // Update subscription record
     const subscription = await prisma.subscription.findFirst({
       where: { userId: user.id, provider, status: 'active' },
     });
@@ -122,11 +155,10 @@ class PaymentService {
     // User keeps access until planExpiresAt
     const expiresAt = user.planExpiresAt || new Date();
 
-    await emailService.sendSubscriptionCancelled(
-      user.email,
-      user.name,
-      expiresAt
-    );
+    await Promise.allSettled([
+      emailService.sendSubscriptionCancelled(user.email, user.name, expiresAt),
+      notificationService.subscriptionCancelled(user.id, expiresAt),
+    ]);
   }
 
   async handleExpiredSubscription(userId: string): Promise<void> {
@@ -138,32 +170,30 @@ class PaymentService {
 
   async renewSubscription(params: {
     userId: string;
-    plan: 'monthly' | 'yearly';
-    provider: 'stripe' | 'paypal' | 'razorpay' | 'paystack';
+    plan: BillingPlan;
+    provider: Provider;
     amount: number;
     currency: string;
     receiptUrl?: string;
+    eventId?: string;
   }): Promise<void> {
-    const { userId, plan, provider, amount, currency, receiptUrl } = params;
+    const { userId, plan, provider, amount, currency, receiptUrl, eventId } = params;
+
+    if (await this.alreadyProcessed(eventId)) {
+      console.log(`Skipping duplicate ${provider} renewal ${eventId}`);
+      return;
+    }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
-    // Extend plan
-    const now = new Date();
-    let planExpiresAt: Date;
-    if (plan === 'monthly') {
-      planExpiresAt = new Date(now.setMonth(now.getMonth() + 1));
-    } else {
-      planExpiresAt = new Date(now.setFullYear(now.getFullYear() + 1));
-    }
+    const planExpiresAt = extendFrom(user.planExpiresAt, plan);
 
     await prisma.user.update({
       where: { id: userId },
       data: { plan, planExpiresAt },
     });
 
-    // Create invoice
     await prisma.invoice.create({
       data: {
         userId: user.id,
@@ -173,17 +203,19 @@ class PaymentService {
         provider,
         status: 'paid',
         receiptUrl: receiptUrl || null,
+        providerInvoiceId: eventId || null,
       },
     });
 
-    await emailService.sendRecurringPayment(
-      user.email,
-      user.name,
-      plan,
-      amount,
-      currency,
-      receiptUrl
-    );
+    await prisma.subscription.updateMany({
+      where: { userId: user.id, provider },
+      data: { status: 'active', endDate: planExpiresAt },
+    });
+
+    await Promise.allSettled([
+      emailService.sendRecurringPayment(user.email, user.name, plan, amount, currency, receiptUrl),
+      notificationService.paymentReceived(user.id, amount, currency, planExpiresAt),
+    ]);
   }
 }
 

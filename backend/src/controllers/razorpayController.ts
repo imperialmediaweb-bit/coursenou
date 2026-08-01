@@ -4,6 +4,28 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
+import { priceFor } from '../utils/planLimits';
+import { rawBody, parsedBody, signaturesMatch } from '../utils/webhook';
+
+const razorpayAuthHeader = (): string =>
+  'Basic ' +
+  Buffer.from(
+    `${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`
+  ).toString('base64');
+
+/** Reads an order back from Razorpay so its notes can be trusted. */
+const fetchRazorpayOrder = async (orderId: string): Promise<any | null> => {
+  try {
+    const response = await fetch(`https://api.razorpay.com/v1/orders/${orderId}`, {
+      headers: { Authorization: razorpayAuthHeader() },
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error: any) {
+    console.error('Failed to fetch Razorpay order:', error.message || error);
+    return null;
+  }
+};
 
 export const createOrder = async (
   req: AuthRequest,
@@ -16,7 +38,9 @@ export const createOrder = async (
       throw new AppError('Invalid plan. Must be "monthly" or "yearly"', 400);
     }
 
-    const amount = plan === 'monthly' ? 999 : 7999; // amount in paise
+    // Razorpay expects paise. This used to send the USD figure straight
+    // through, so a $9.99 plan was billed as 999 paise (about 12 cents).
+    const amount = priceFor('razorpay', plan as 'monthly' | 'yearly').minor;
 
     const credentials = Buffer.from(
       `${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`
@@ -75,16 +99,31 @@ export const verify = async (
       throw new AppError('Invalid payment signature', 400);
     }
 
-    const validPlan = plan === 'yearly' ? 'yearly' : 'monthly';
-    const amount = validPlan === 'monthly' ? 9.99 : 79.99;
+    // The signature only covers order_id|payment_id, so `plan` from the
+    // request body is attacker-controlled: pay for a month, ask for a year.
+    // The authoritative value is the note we attached when creating the order.
+    const order = await fetchRazorpayOrder(razorpay_order_id);
+    const orderUserId = order?.notes?.userId;
+    const validPlan: 'monthly' | 'yearly' =
+      order?.notes?.plan === 'yearly' ? 'yearly' : 'monthly';
+
+    if (!order || order.status === 'created') {
+      throw new AppError('Payment has not been captured yet', 400);
+    }
+    if (orderUserId && orderUserId !== req.user!._id.toString()) {
+      throw new AppError('This order belongs to a different account', 403);
+    }
+
+    const price = priceFor('razorpay', validPlan);
 
     await paymentService.activateSubscription({
       userId: req.user!._id.toString(),
       plan: validPlan,
       provider: 'razorpay',
       providerId: razorpay_payment_id,
-      amount,
-      currency: 'inr',
+      amount: price.major,
+      currency: price.currency,
+      eventId: `razorpay:${razorpay_payment_id}`,
     });
 
     res.status(200).json({ message: 'Payment verified and subscription activated' });
@@ -99,34 +138,39 @@ export const webhook = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET!;
-    const receivedSignature = req.headers['x-razorpay-signature'] as string;
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('RAZORPAY_WEBHOOK_SECRET is not set — rejecting webhook');
+      throw new AppError('Webhook is not configured', 503);
+    }
 
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(JSON.stringify(req.body))
+      .update(rawBody(req))
       .digest('hex');
 
-    if (expectedSignature !== receivedSignature) {
+    if (!signaturesMatch(expectedSignature, req.headers['x-razorpay-signature'])) {
       throw new AppError('Invalid webhook signature', 400);
     }
 
-    const event = req.body;
+    const event = parsedBody(req);
 
-    if (event.event === 'payment.authorized') {
-      const payment = event.payload.payment.entity;
-      const notes = payment.notes || {};
+    if (event.event === 'payment.authorized' || event.event === 'payment.captured') {
+      const payment = event.payload?.payment?.entity;
+      const notes = payment?.notes || {};
       const userId = notes.userId;
-      const plan = notes.plan || 'monthly';
+      const plan: 'monthly' | 'yearly' = notes.plan === 'yearly' ? 'yearly' : 'monthly';
 
-      if (userId) {
+      if (userId && payment) {
+        const price = priceFor('razorpay', plan);
         await paymentService.activateSubscription({
           userId,
-          plan: plan as 'monthly' | 'yearly',
+          plan,
           provider: 'razorpay',
           providerId: payment.id,
-          amount: plan === 'monthly' ? 9.99 : 79.99,
-          currency: 'inr',
+          amount: price.major,
+          currency: price.currency,
+          eventId: `razorpay:${payment.id}`,
         });
       }
     }

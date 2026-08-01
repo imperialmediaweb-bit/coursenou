@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
+import { notificationService } from '../services/notificationService';
 
 const XP_VALUES = {
   COURSE_CREATED: 50,
@@ -99,6 +100,10 @@ export const addXP = async (req: AuthRequest, res: Response, next: NextFunction)
       where: { id: userId },
       data: { xp: newXp, level: newLevel, streak: newStreak, lastActiveDate: now },
     });
+
+    if (newLevel > user.level) {
+      notificationService.levelUp(userId, newLevel).catch(() => {});
+    }
 
     res.json({ success: true, data: { xpGained: totalXpGain, totalXp: newXp, level: newLevel, streak: newStreak, levelUp: newLevel > user.level, action } });
   } catch (error) { next(error); }

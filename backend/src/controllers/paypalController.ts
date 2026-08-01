@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
+import { priceFor } from '../utils/planLimits';
 
 const getPayPalBaseUrl = (): string => {
   return process.env.PAYPAL_MODE === 'live'
@@ -129,13 +130,68 @@ export const capture = async (
       plan: plan as 'monthly' | 'yearly',
       provider: 'paypal',
       providerId: subscriptionId,
-      amount: plan === 'monthly' ? 9.99 : 79.99,
-      currency: 'usd',
+      amount: priceFor('paypal', plan as 'monthly' | 'yearly').major,
+      currency: priceFor('paypal', plan as 'monthly' | 'yearly').currency,
     });
 
     res.status(200).json({ message: 'Subscription activated successfully' });
   } catch (error) {
     next(error);
+  }
+};
+
+/**
+ * Confirms the request really came from PayPal.
+ *
+ * Without this, anyone who knows the URL can POST a
+ * BILLING.SUBSCRIPTION.ACTIVATED body with any user id in `custom_id` and get
+ * a paid plan for free — the handler below acts on the payload directly.
+ * PayPal has no HMAC header; verification is a call to their API with the
+ * transmission headers plus the webhook id we registered.
+ */
+const isVerifiedPayPalEvent = async (req: AuthRequest): Promise<boolean> => {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (!webhookId) {
+    console.error('PAYPAL_WEBHOOK_ID is not set — rejecting PayPal webhook');
+    return false;
+  }
+
+  const required = [
+    'paypal-transmission-id',
+    'paypal-transmission-time',
+    'paypal-transmission-sig',
+    'paypal-cert-url',
+    'paypal-auth-algo',
+  ];
+  if (required.some((header) => !req.headers[header])) return false;
+
+  try {
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(
+      `${getPayPalBaseUrl()}/v1/notifications/verify-webhook-signature`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          auth_algo: req.headers['paypal-auth-algo'],
+          cert_url: req.headers['paypal-cert-url'],
+          transmission_id: req.headers['paypal-transmission-id'],
+          transmission_sig: req.headers['paypal-transmission-sig'],
+          transmission_time: req.headers['paypal-transmission-time'],
+          webhook_id: webhookId,
+          webhook_event: req.body,
+        }),
+      }
+    );
+
+    const result: any = await response.json();
+    return result.verification_status === 'SUCCESS';
+  } catch (error: any) {
+    console.error('PayPal webhook verification failed:', error.message || error);
+    return false;
   }
 };
 
@@ -145,6 +201,10 @@ export const webhook = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    if (!(await isVerifiedPayPalEvent(req))) {
+      throw new AppError('Invalid webhook signature', 400);
+    }
+
     const event = req.body;
     const eventType = event.event_type;
 
@@ -163,8 +223,8 @@ export const webhook = async (
           plan: plan as 'monthly' | 'yearly',
           provider: 'paypal',
           providerId: subscriptionId,
-          amount: plan === 'monthly' ? 9.99 : 79.99,
-          currency: 'usd',
+          amount: priceFor('paypal', plan as 'monthly' | 'yearly').major,
+          currency: priceFor('paypal', plan as 'monthly' | 'yearly').currency,
         });
         break;
       }
@@ -196,8 +256,8 @@ export const webhook = async (
             userId: user.id.toString(),
             plan,
             provider: 'paypal',
-            amount: plan === 'monthly' ? 9.99 : 79.99,
-            currency: 'usd',
+            amount: priceFor('paypal', plan).major,
+            currency: priceFor('paypal', plan).currency,
           });
         }
         break;

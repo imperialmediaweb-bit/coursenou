@@ -55,6 +55,7 @@ import exportRoutes from './routes/exportRoutes';
 import gamificationRoutes from './routes/gamificationRoutes';
 import ogRoutes from './routes/ogRoutes';
 import templateRoutes from './routes/templateRoutes';
+import notificationRoutes from './routes/notificationRoutes';
 
 const app = express();
 
@@ -86,16 +87,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Stripe webhook needs raw body - must be before express.json()
+// Webhook signatures are computed over the exact bytes the provider sent.
+// Re-serialising a parsed object can change key order or escaping and make a
+// legitimate event fail verification, so these routes must see the raw buffer
+// and therefore must be registered before express.json().
 app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/razorpay/webhook', express.raw({ type: 'application/json' }));
+app.use('/api/paystack/webhook', express.raw({ type: 'application/json' }));
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Rate limiting
-app.use(globalLimiter);
+// Rate limiting — API only. Mounted globally it also counted the JS chunks,
+// CSS and images of the app itself, so simply loading a page burned a tenth
+// of the allowance and active users were served 429s.
+app.use('/api', globalLimiter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -133,6 +141,7 @@ app.use('/api/export', exportRoutes);
 app.use('/api/gamification', gamificationRoutes);
 app.use('/api/og', ogRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve frontend static files in production.
 // Hashed assets can be cached forever; index.html must never be cached,

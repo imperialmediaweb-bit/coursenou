@@ -4,6 +4,7 @@ import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { aiService } from '../services/aiService';
 import { getDemoCourse } from '../utils/demoStore';
+import { notificationService } from '../services/notificationService';
 
 export const generateQuiz = async (
   req: AuthRequest,
@@ -164,6 +165,12 @@ export const submitQuiz = async (
       where: { id: quiz.id },
       data: { score, passed, completedAt },
     });
+
+    if (passed) {
+      notificationService
+        .quizPassed(String(req.user!._id), quiz.courseId, correct, questions.length)
+        .catch(() => {});
+    }
 
     res.status(200).json({
       success: true,

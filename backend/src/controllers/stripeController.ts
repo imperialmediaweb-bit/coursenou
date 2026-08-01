@@ -5,6 +5,7 @@ import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
 import { emailService } from '../services/emailService';
+import { priceFor } from '../utils/planLimits';
 
 const getStripe = () => {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -91,8 +92,37 @@ export const webhook = async (
           plan: plan as 'monthly' | 'yearly',
           provider: 'stripe',
           providerId: subscriptionId,
-          amount: plan === 'monthly' ? 9.99 : 79.99,
-          currency: 'usd',
+          amount: priceFor('stripe', plan as 'monthly' | 'yearly').major,
+          currency: priceFor('stripe', plan as 'monthly' | 'yearly').currency,
+          eventId: event.id,
+        });
+        break;
+      }
+
+      // Every renewal after the first payment arrives as an invoice event.
+      // Without this the plan expiry set at checkout simply lapses and the
+      // auth middleware downgrades a customer who is still being charged.
+      case 'invoice.paid':
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        // The first invoice is already handled by checkout.session.completed.
+        if (invoice.billing_reason === 'subscription_create') break;
+
+        const customerId = invoice.customer as string;
+        const user = await prisma.user.findFirst({
+          where: { stripeCustomerId: customerId },
+        });
+        if (!user) break;
+
+        const plan = (user.plan === 'yearly' ? 'yearly' : 'monthly') as 'monthly' | 'yearly';
+        await paymentService.renewSubscription({
+          userId: user.id,
+          plan,
+          provider: 'stripe',
+          amount: (invoice.amount_paid ?? 0) / 100 || priceFor('stripe', plan).major,
+          currency: invoice.currency || priceFor('stripe', plan).currency,
+          receiptUrl: invoice.hosted_invoice_url || undefined,
+          eventId: event.id,
         });
         break;
       }

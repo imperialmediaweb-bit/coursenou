@@ -42,6 +42,7 @@ model User {
   progress       CourseProgress[]
   ratings        Rating[]
   bookmarks      Bookmark[]
+  notifications  Notification[]
 }
 
 model Course {
@@ -231,4 +232,20 @@ model Bookmark {
 
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   course         Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String   @default("")
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

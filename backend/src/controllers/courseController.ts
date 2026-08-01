@@ -11,6 +11,7 @@ import { exportService } from '../services/exportService';
 import { buildCourseDocument } from '../services/courseDocument';
 import { certificateService } from '../services/certificateService';
 import { emailService } from '../services/emailService';
+import { notificationService } from '../services/notificationService';
 import { PLAN_LIMITS } from '../utils/planLimits';
 
 const generateTopicsSchema = z.object({
@@ -172,6 +173,15 @@ export const generateCourse = async (
       },
     });
 
+    notificationService
+      .courseCreated(
+        String(user._id || user.id),
+        course.id,
+        title,
+        topicsWithImages.reduce((sum, topic) => sum + topic.subtopics.length, 0)
+      )
+      .catch(() => {});
+
     res.status(201).json({ success: true, data: course });
   } catch (error) {
     next(error);
@@ -294,9 +304,15 @@ export const completeCourse = async (
       },
     });
 
-    // Send certificate email (non-blocking)
+    // Neither notification path may block completing the course
     emailService
       .sendCertificateEarned(user.email, user.name, course.title, certificate.id.toString())
+      .catch(() => {});
+    notificationService
+      .courseCompleted(String(user._id || user.id), course.id, course.title)
+      .catch(() => {});
+    notificationService
+      .certificateEarned(String(user._id || user.id), certificate.id, course.title)
       .catch(() => {});
 
     res.status(200).json({ success: true, data: certificate });

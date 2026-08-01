@@ -1,6 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
+import { emailService } from '../services/emailService';
+
+const contactSchema = z.object({
+  name: z.string().trim().min(2, 'Please enter your name').max(120),
+  email: z.string().trim().email('Please enter a valid email address').max(200),
+  message: z
+    .string()
+    .trim()
+    .min(10, 'Please write at least a few words')
+    .max(5000, 'Message is too long (5000 characters maximum)'),
+});
 
 export const getPublishedBlogs = async (
   _req: Request,
@@ -58,13 +70,18 @@ export const submitContact = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, email, message } = req.body;
-
-    if (!name || !email || !message) {
-      throw new AppError('Name, email, and message are required', 400);
+    const parsed = contactSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(parsed.error.errors[0].message, 400);
     }
+    const { name, email, message } = parsed.data;
 
-    await prisma.contactMessage.create({ data: { name, email, message } });
+    const saved = await prisma.contactMessage.create({ data: { name, email, message } });
+
+    // The message used to land in the database and nowhere else, so unless
+    // the owner happened to open the admin panel they never knew about it.
+    emailService.sendContactNotification(name, email, message, saved.id).catch(() => {});
+
     res.status(201).json({ message: 'Message sent successfully' });
   } catch (error) {
     next(error);
