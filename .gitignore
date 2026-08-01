@@ -1,10 +1,11 @@
-node_modules/
-dist/
-.env
-.env.local
 *.log
 .DS_Store
-coverage/
-.vscode/
+.env
+.env.local
 .idea/
+.vscode/
+certificate-*.html
 certificate-sample.html
+coverage/
+dist/
+node_modules/
