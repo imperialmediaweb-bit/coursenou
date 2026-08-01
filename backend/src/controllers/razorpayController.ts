@@ -7,6 +7,12 @@ import { paymentService } from '../services/paymentService';
 import { priceFor } from '../utils/planLimits';
 import { rawBody, parsedBody, signaturesMatch } from '../utils/webhook';
 
+const assertRazorpayConfigured = (): void => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new AppError('Razorpay is not configured', 503);
+  }
+};
+
 const razorpayAuthHeader = (): string =>
   'Basic ' +
   Buffer.from(
@@ -33,6 +39,8 @@ export const createOrder = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    assertRazorpayConfigured();
+
     const { plan } = req.body;
     if (!plan || !['monthly', 'yearly'].includes(plan)) {
       throw new AppError('Invalid plan. Must be "monthly" or "yearly"', 400);
@@ -80,6 +88,8 @@ export const verify = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    assertRazorpayConfigured();
+
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } =
       req.body;
 

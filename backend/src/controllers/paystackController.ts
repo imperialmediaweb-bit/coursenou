@@ -7,12 +7,20 @@ import { paymentService } from '../services/paymentService';
 import { priceFor } from '../utils/planLimits';
 import { rawBody, parsedBody, signaturesMatch } from '../utils/webhook';
 
+const assertPaystackConfigured = (): void => {
+  if (!process.env.PAYSTACK_SECRET_KEY) {
+    throw new AppError('Paystack is not configured', 503);
+  }
+};
+
 export const initialize = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
+    assertPaystackConfigured();
+
     const { plan } = req.body;
     if (!plan || !['monthly', 'yearly'].includes(plan)) {
       throw new AppError('Invalid plan. Must be "monthly" or "yearly"', 400);
@@ -60,6 +68,8 @@ export const verify = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    assertPaystackConfigured();
+
     const { reference } = req.params;
     if (!reference) {
       throw new AppError('Reference is required', 400);

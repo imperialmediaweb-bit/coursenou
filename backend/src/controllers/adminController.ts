@@ -338,22 +338,44 @@ export const getBlogById = async (
   }
 };
 
+
+/** URL-safe slug, guaranteed not to collide with an existing post. */
+const slugify = (value: string): string =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+
+const uniqueBlogSlug = async (source: string, ignoreId?: string): Promise<string> => {
+  const base = slugify(source) || 'post';
+  let candidate = base;
+
+  for (let suffix = 2; suffix < 200; suffix++) {
+    const existing = await prisma.blog.findUnique({ where: { slug: candidate } });
+    if (!existing || existing.id === ignoreId) return candidate;
+    candidate = `${base}-${suffix}`;
+  }
+  return `${base}-${Date.now()}`;
+};
+
 export const createBlog = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { title, content, published, coverImage } = req.body;
+    const { title, content, published, coverImage, slug: requestedSlug } = req.body;
 
     if (!title || !content) {
       throw new AppError('Title and content are required', 400);
     }
 
-    const slug = title
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    // The editor sends a slug but it used to be ignored and always derived
+    // from the title — so two posts with the same title collided on the unique
+    // index and the admin saw a bare 500.
+    const slug = await uniqueBlogSlug(requestedSlug || title);
 
     const blog = await prisma.blog.create({
       data: {
@@ -382,15 +404,14 @@ export const updateBlog = async (
       throw new AppError('Blog not found', 404);
     }
 
-    const { title, content, published, coverImage } = req.body;
+    const { title, content, published, coverImage, slug: requestedSlug } = req.body;
 
     const data: any = {};
-    if (title !== undefined) {
-      data.title = title;
-      data.slug = title
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '');
+    if (title !== undefined) data.title = title;
+    if (title !== undefined || requestedSlug !== undefined) {
+      // Renaming a post to an existing title used to violate the unique index
+      // and surface as a 500 in the editor.
+      data.slug = await uniqueBlogSlug(requestedSlug || title, existing.id);
     }
     if (content !== undefined) data.content = content;
     if (published !== undefined) data.published = published;

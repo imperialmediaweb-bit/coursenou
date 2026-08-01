@@ -5,6 +5,18 @@ import prisma from '../utils/prisma';
 import { paymentService } from '../services/paymentService';
 import { priceFor } from '../utils/planLimits';
 
+/**
+ * Fails loudly and clearly when the provider has no credentials. Without this
+ * an unconfigured provider threw deep inside the API call and reached the user
+ * as a generic 500 "An unexpected error occurred", which says nothing about
+ * what is actually wrong.
+ */
+const assertPayPalConfigured = (): void => {
+  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+    throw new AppError('PayPal is not configured', 503);
+  }
+};
+
 const getPayPalBaseUrl = (): string => {
   return process.env.PAYPAL_MODE === 'live'
     ? 'https://api-m.paypal.com'
@@ -41,6 +53,11 @@ export const createSubscription = async (
       throw new AppError('Invalid plan. Must be "monthly" or "yearly"', 400);
     }
 
+    assertPayPalConfigured();
+    if (!process.env.PAYPAL_MONTHLY_PLAN_ID || !process.env.PAYPAL_YEARLY_PLAN_ID) {
+      throw new AppError('PayPal plans are not configured', 503);
+    }
+
     const user = req.user!;
     const baseUrl = getPayPalBaseUrl();
     const accessToken = await getPayPalAccessToken();
@@ -67,7 +84,7 @@ export const createSubscription = async (
         },
         custom_id: user.id.toString(),
         application_context: {
-          brand_name: 'CourseBit',
+          brand_name: process.env.BRAND_NAME || 'Coursbit',
           return_url: `${process.env.FRONTEND_URL}/billing?paypal=true&plan=${plan}`,
           cancel_url: `${process.env.FRONTEND_URL}/billing?cancelled=true`,
           user_action: 'SUBSCRIBE_NOW',
@@ -96,6 +113,8 @@ export const capture = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    assertPayPalConfigured();
+
     const { subscriptionId } = req.body;
     if (!subscriptionId) {
       throw new AppError('Subscription ID is required', 400);
