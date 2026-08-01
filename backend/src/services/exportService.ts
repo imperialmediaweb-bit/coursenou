@@ -1,4 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
+import { markdownToHtml, markdownToPlainText } from '../utils/markdown';
 
 
 class ExportService {
@@ -74,7 +75,7 @@ class ExportService {
 
       topic.subtopics.forEach((subtopic: any) => {
         html += `<h3>${this.escapeHtml(subtopic.title)}</h3>`;
-        html += `<div>${subtopic.content}</div>`;
+        html += `<div>${markdownToHtml(subtopic.content)}</div>`;
         if (subtopic.imageUrl) {
           html += `<img src="${subtopic.imageUrl}" alt="${this.escapeHtml(subtopic.title)}" />`;
         }
@@ -175,8 +176,9 @@ class ExportService {
           bold: true,
         });
 
-        // Truncate content for slide readability
-        const content = subtopic.content.substring(0, 800);
+        // Slides cannot render Markdown, so flatten it first — otherwise the
+        // deck shows literal ** and ## markers.
+        const content = markdownToPlainText(subtopic.content).substring(0, 800);
         const hasImage = !!subtopic.imageUrl;
 
         slide.addText(content, {

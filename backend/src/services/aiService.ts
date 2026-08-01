@@ -4,6 +4,9 @@ import Anthropic from '@anthropic-ai/sdk';
 
 type AIProvider = 'gemini' | 'openai' | 'claude';
 
+/** Which shape of demo content to emit when no provider is reachable. */
+type DemoKind = 'lesson';
+
 interface TopicResult {
   title: string;
   subtopics: string[];
@@ -62,6 +65,8 @@ class AIService {
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
+      // Lessons are long-form now; the default cap truncated them mid-sentence.
+      max_tokens: 4000,
     });
     return response.choices[0]?.message?.content || '';
   }
@@ -89,7 +94,11 @@ class AIService {
     }
   }
 
-  private async generate(provider: AIProvider, prompt: string): Promise<string> {
+  private async generate(
+    provider: AIProvider,
+    prompt: string,
+    demoKind?: DemoKind
+  ): Promise<string> {
     // Try requested provider, fallback to any available, then use mock
     const providers: AIProvider[] = [provider, 'openai', 'gemini', 'claude'];
     const tried: string[] = [];
@@ -110,10 +119,12 @@ class AIService {
 
     // All providers failed or none configured — use demo content
     console.log('All AI providers failed or none configured — using demo generation');
-    return this.generateDemoContent(prompt);
+    return this.generateDemoContent(prompt, demoKind);
   }
 
-  private generateDemoContent(prompt: string): string {
+  private generateDemoContent(prompt: string, demoKind?: DemoKind): string {
+    if (demoKind === 'lesson') return this.demoLesson(prompt);
+
     // Check what kind of content is requested based on prompt keywords
     if (prompt.includes('flashcards') || prompt.includes('Flashcard')) {
       return JSON.stringify([
@@ -178,7 +189,7 @@ class AIService {
     numTopics: number
   ): Promise<TopicResult[]> {
     const prompt = `Generate a structured course outline for the topic: "${title}" in ${language} language.
-Create exactly ${numTopics} main topics, each with 3-4 subtopics.
+Create exactly ${numTopics} main topics, each with exactly 4 subtopics.
 
 Return ONLY valid JSON in this format:
 [
@@ -191,7 +202,8 @@ Return ONLY valid JSON in this format:
 Requirements:
 - Topics should be logically ordered from beginner to advanced
 - Each topic title should be clear and descriptive
-- Subtopics should cover specific aspects of the main topic
+- Subtopics must be specific, teachable lessons — not vague labels like "Overview" or "Introduction"
+- No subtopic may repeat across topics
 - All content must be in ${language}`;
 
     const result = await this.generate(provider, prompt);
@@ -203,71 +215,188 @@ Requirements:
     provider: AIProvider,
     topics: TopicResult[],
     type: 'image' | 'video',
-    language: string
+    language: string,
+    courseTitle = ''
   ): Promise<TopicContent[]> {
-    // Topics are generated concurrently (bounded) instead of one after
-    // another. Sequentially, a 3-topic course meant 3 chained AI calls and
-    // could exceed the platform's request timeout, which surfaced to users
-    // as "generation started, then nothing happened".
-    const CONCURRENCY = 3;
-    const results: TopicContent[] = new Array(topics.length);
+    // One request per lesson rather than one per topic. Asking a model for
+    // three 500-word lessons inside a single JSON array reliably produced
+    // truncated or unescaped JSON — the parse failed and the whole topic fell
+    // back to filler text ("This is an important concept that builds on
+    // fundamental principles..."), which is exactly what learners complained
+    // about. A single lesson as plain Markdown has nothing to parse, so it
+    // cannot fail that way, and each response has room to be genuinely long.
+    const jobs = topics.flatMap((topic, topicIndex) =>
+      topic.subtopics.map((subtopic, subtopicIndex) => ({
+        topicIndex,
+        subtopicIndex,
+        topicTitle: topic.title,
+        subtopic,
+      }))
+    );
+
+    const results: TopicContent[] = topics.map((topic) => ({
+      title: topic.title,
+      subtopics: new Array(topic.subtopics.length),
+    }));
+
+    // Scale the pool with the workload so a 20-topic course still finishes
+    // inside the request window, without hammering the provider on small ones.
+    const concurrency = Math.min(8, Math.max(4, Math.ceil(jobs.length / 8)));
     let cursor = 0;
 
     const worker = async (): Promise<void> => {
       while (true) {
         const index = cursor++;
-        if (index >= topics.length) return;
-        results[index] = await this.generateTopicContent(provider, topics[index], language);
+        if (index >= jobs.length) return;
+        const job = jobs[index];
+        results[job.topicIndex].subtopics[job.subtopicIndex] = await this.generateLesson(
+          provider,
+          courseTitle,
+          job.topicTitle,
+          job.subtopic,
+          language
+        );
       }
     };
 
     await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, topics.length) }, () => worker())
+      Array.from({ length: Math.min(concurrency, jobs.length) }, () => worker())
     );
 
     return results;
   }
 
-  /** Generates the lesson bodies for a single topic, with a safe fallback. */
-  private async generateTopicContent(
-    provider: AIProvider,
-    topic: TopicResult,
+  private lessonPrompt(
+    courseTitle: string,
+    topicTitle: string,
+    subtopic: string,
     language: string
-  ): Promise<TopicContent> {
-    const prompt = `Generate detailed educational content for the topic: "${topic.title}" in ${language}.
+  ): string {
+    return `You are an expert instructor writing one lesson of the online course "${courseTitle || topicTitle}".
 
-For each of the following subtopics, provide comprehensive educational content (300-500 words each):
-${topic.subtopics.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+Module: "${topicTitle}"
+Lesson: "${subtopic}"
+Language: ${language}
 
-Return ONLY valid JSON in this format:
-[
-  {
-    "title": "Subtopic Title",
-    "content": "Detailed educational content with explanations, examples, and key concepts...",
-    "imageSearchTerm": "relevant search term for finding an illustrative image"
+Write the complete lesson body in Markdown, 700-900 words, structured exactly like this:
+
+1. An opening paragraph of 2-4 sentences saying what this lesson covers and why it matters.
+2. Three or four "## " sections, each with a descriptive heading and one or two substantial paragraphs of specific, concrete explanation.
+3. At least one worked example, case study or step-by-step walkthrough. If the subject is technical, include a fenced code block with real, runnable code and explain it underneath.
+4. One "> " blockquote holding a single memorable key insight.
+5. A "## Key Takeaways" section with 4-5 "- " bullets, each opening with a **bolded phrase** followed by an em dash and a specific point.
+6. A "## Common Mistakes" section with 2-3 "- " bullets describing real errors beginners make and how to avoid them.
+
+Rules:
+- Teach real substance: actual facts, figures, names, tools, techniques. Never write filler such as "this is an important concept", "builds on fundamental principles" or "has real-world applications across many fields".
+- Do not restate the lesson title as a heading; it is already displayed above your text.
+- Write everything in ${language}.
+- Output Markdown only — no JSON, no preamble, no closing pleasantries.
+
+Finish with one final line, in English, in exactly this form (2-4 words naming a concrete, photographable object or scene that illustrates the lesson):
+IMAGE: <search query>`;
   }
-]
 
-Requirements:
-- Content should be educational, well-structured, and engaging
-- Include practical examples where applicable
-- Use clear explanations suitable for learners
-- All content must be in ${language}
-- imageSearchTerm should be in English for image search APIs`;
+  /** Generates a single lesson body, retrying once before falling back. */
+  private async generateLesson(
+    provider: AIProvider,
+    courseTitle: string,
+    topicTitle: string,
+    subtopic: string,
+    language: string
+  ): Promise<SubtopicContent> {
+    const prompt = this.lessonPrompt(courseTitle, topicTitle, subtopic, language);
 
-    try {
-      const result = await this.generate(provider, prompt);
-      const subtopics = this.parseJSON<SubtopicContent[]>(result);
-      return { title: topic.title, subtopics };
-    } catch (err: any) {
-      console.error(`Failed to generate content for topic "${topic.title}":`, err.message);
-      const fallbackSubtopics = topic.subtopics.map((sub) => ({
-        title: sub,
-        content: `## ${sub}\n\nThis section covers ${sub} as part of ${topic.title}. Understanding this topic is essential for building a solid foundation.\n\n**Key Points**\n\n- **Core Understanding** — ${sub} forms an important part of this subject area.\n- **Practical Application** — The concepts here have direct real-world applications.\n- **Building Blocks** — Each concept builds on the previous one.\n\n### Summary\n\nTake time to review the key points above and practice applying them.`,
-        imageSearchTerm: `${topic.title} ${sub}`,
-      }));
-      return { title: topic.title, subtopics: fallbackSubtopics };
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const raw = await this.generate(provider, prompt, 'lesson');
+        const lesson = this.parseLesson(raw, courseTitle, topicTitle, subtopic);
+        // A stub response is worse than a retry — a real lesson is long.
+        if (lesson.content.length >= 400) return lesson;
+      } catch (err: any) {
+        console.error(`Lesson "${subtopic}" attempt ${attempt + 1} failed:`, err.message || err);
+      }
     }
+
+    console.error(`Falling back to template content for lesson "${subtopic}"`);
+    return {
+      title: subtopic,
+      content: this.demoLessonBody(courseTitle || topicTitle, topicTitle, subtopic),
+      imageSearchTerm: `${topicTitle} ${subtopic}`,
+    };
+  }
+
+  /**
+   * Splits the trailing `IMAGE:` hint off the lesson body and tidies up the
+   * markdown the model tends to wrap around it.
+   */
+  private parseLesson(
+    raw: string,
+    courseTitle: string,
+    topicTitle: string,
+    subtopic: string
+  ): SubtopicContent {
+    let body = (raw || '').trim();
+
+    // Models occasionally wrap the whole answer in a ```markdown fence.
+    const fenced = body.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/);
+    if (fenced) body = fenced[1].trim();
+
+    let imageSearchTerm = '';
+    const imageLine = body.match(/^[ \t>*_-]*IMAGE\s*:\s*(.+?)[ \t*_]*$/im);
+    if (imageLine) {
+      imageSearchTerm = imageLine[1].replace(/[`"'.]/g, '').trim();
+      body = body.replace(imageLine[0], '').trim();
+    }
+
+    // Drop a repeated lesson title at the very top — the UI already shows it.
+    body = body.replace(/^#{1,3}\s*(.+)\n+/, (match, heading: string) =>
+      heading.trim().toLowerCase() === subtopic.trim().toLowerCase() ? '' : match
+    );
+
+    return {
+      title: subtopic,
+      content: body,
+      imageSearchTerm: imageSearchTerm || `${topicTitle} ${subtopic}`,
+    };
+  }
+
+  /** Demo-mode lesson: no API key configured, so no provider was reachable. */
+  private demoLesson(prompt: string): string {
+    const course = prompt.match(/course "([^"]+)"/)?.[1] || 'this course';
+    const topicTitle = prompt.match(/Module: "([^"]+)"/)?.[1] || course;
+    const subtopic = prompt.match(/Lesson: "([^"]+)"/)?.[1] || 'this lesson';
+    return `${this.demoLessonBody(course, topicTitle, subtopic)}\n\nIMAGE: ${subtopic}`;
+  }
+
+  private demoLessonBody(course: string, topicTitle: string, subtopic: string): string {
+    return `${subtopic} is one of the building blocks of ${topicTitle}. This lesson walks through what it is, how practitioners actually use it, and the judgement calls that separate a working understanding from a superficial one.
+
+## Why it matters
+
+Every discipline has a handful of ideas that everything else hangs from, and within ${topicTitle} this is one of them. Get it right and the later material in ${course} follows naturally; skip it and you end up memorising procedures without knowing when they apply.
+
+## How it works in practice
+
+Start from the simplest case you can construct, verify that you can predict the outcome before you run it, then add one variable at a time. Practitioners rarely reason about the whole system at once — they isolate a piece, confirm their mental model against it, and only then widen the scope.
+
+> Understanding is the ability to predict the result before you see it.
+
+## Working through an example
+
+Take a realistic scenario from your own context and apply the idea end to end. Write down what you expect to happen, carry out the steps, and compare. Where the result differs from your prediction, that gap is precisely the part of the concept you have not internalised yet — and it is the most valuable thing you will study today.
+
+## Key Takeaways
+
+- **Start small** — a minimal example you fully understand beats a complex one you only half follow.
+- **Predict first** — commit to an expected outcome before you test, so you learn from the mismatch.
+- **Change one thing** — isolating variables is what turns guessing into diagnosis.
+- **Practise deliberately** — revisit this lesson after a day and again after a week.
+
+## Common Mistakes
+
+- **Reading without doing** — recognition feels like understanding but does not survive contact with a real problem.
+- **Skipping the fundamentals** — later lessons in ${topicTitle} assume this one is solid.`;
   }
 
   async generateQuiz(

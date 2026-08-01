@@ -1,9 +1,10 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
+import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
 
 // Public pages
 const Landing = lazy(() => import('./pages/Landing'));
