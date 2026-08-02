@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { PLAN_PRICES } from '../utils/planLimits';
 import prisma from '../utils/prisma';
+import { reconcileSubscription } from '../services/reconcileService';
 
 export const getPlans = async (
   _req: AuthRequest,
@@ -202,6 +203,38 @@ export const downloadInvoice = async (
       'Content-Length': pdfBuffer.length,
     });
     res.send(pdfBuffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Recovers a payment whose webhook never arrived.
+ *
+ * Called when someone comes back from checkout. If the provider says they have
+ * an active subscription and this account is still on the free plan, the
+ * subscription is activated here rather than leaving a paying customer locked
+ * out until somebody notices.
+ */
+export const reconcile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = String(req.user!._id || (req.user as any).id);
+    if (userId === 'demo-user-id-001') {
+      res.json({ success: true, data: { activated: false, reason: 'Demo account' } });
+      return;
+    }
+
+    const result = await reconcileSubscription(userId);
+
+    if (result.activated) {
+      console.log(`Reconciled ${result.provider} subscription for ${userId} — webhook had not arrived`);
+    }
+
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

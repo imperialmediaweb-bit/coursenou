@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { Invoice } from '../../types';
+import toast from 'react-hot-toast';
 
 const PLANS = [
   {
@@ -22,20 +23,58 @@ const PLANS = [
 ];
 
 export default function BillingPage() {
-  const { user } = useAuthStore();
+  const { user, fetchUser } = useAuthStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [checking, setChecking] = useState(false);
   const isPaid = user?.plan === 'monthly' || user?.plan === 'yearly';
 
-  useEffect(() => {
-    const fetchInvoices = async () => {
-      try {
-        const res = await api.get('/billing/invoices');
-        setInvoices(res.data.data || res.data || []);
-      } catch {
-        // silently ignore
+  const fetchInvoices = async () => {
+    try {
+      const res = await api.get('/billing/invoices');
+      setInvoices(res.data.data || res.data || []);
+    } catch {
+      // silently ignore
+    }
+  };
+
+  /**
+   * Asks the payment provider directly whether this account has paid.
+   *
+   * A webhook can be lost — a deployment restarting, a delivery failure — and
+   * the customer is then charged while looking at a free account. This closes
+   * that gap. It only ever activates an account that is still on the free
+   * plan, so refreshing the page cannot extend a subscription twice.
+   */
+  const checkPayment = async (announce: boolean) => {
+    try {
+      setChecking(true);
+      const res = await api.post('/billing/reconcile');
+      if (res.data?.data?.activated) {
+        await fetchUser();
+        await fetchInvoices();
+        toast.success('Your subscription is active. Thank you!');
+      } else if (announce) {
+        toast('No new payment found for this account.', { icon: 'ℹ️' });
       }
-    };
+    } catch {
+      if (announce) toast.error('Could not check your payment status.');
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
     fetchInvoices();
+
+    // Coming back from a provider's checkout page. Every gateway returns here
+    // with its own marker.
+    const params = new URLSearchParams(window.location.search);
+    const returnedFromCheckout = ['success', 'paypal', 'paystack', 'razorpay'].some((key) =>
+      params.has(key)
+    );
+    if (returnedFromCheckout) {
+      checkPayment(false);
+    }
   }, []);
 
   return (
@@ -56,6 +95,15 @@ export default function BillingPage() {
                   </span>
                 )}
               </div>
+              {!isPaid && (
+                <button
+                  onClick={() => checkPayment(true)}
+                  disabled={checking}
+                  className="mt-2 text-sm font-sans text-accent hover:text-accent-glow underline underline-offset-2 disabled:opacity-50"
+                >
+                  {checking ? 'Checking…' : 'Already paid? Check payment status'}
+                </button>
+              )}
               {user?.planExpiresAt && (
                 <p className="text-sm text-muted font-sans mt-1">
                   {isPaid ? 'Renews' : 'Expires'}: {new Date(user.planExpiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
