@@ -86,12 +86,9 @@ export default function LandingFooter() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-12 pt-8 border-t border-border flex justify-center sm:justify-start">
           <span className="text-xs text-muted">
             &copy; {new Date().getFullYear()} Coursbit. All rights reserved.
-          </span>
-          <span className="text-xs text-muted">
-            Made with &hearts; using Gemini &amp; GPT-4o
           </span>
         </div>
       </div>
