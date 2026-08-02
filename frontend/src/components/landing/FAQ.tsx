@@ -10,9 +10,9 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: 'What AI models does Coursbit use?',
+    question: 'How is the course written?',
     answer:
-      'Coursbit supports Google Gemini, OpenAI GPT-4o, and Anthropic Claude. The system automatically selects the best available provider for optimal results. All providers support 23 languages and generate high-quality educational content.',
+      'Each lesson is written individually by a large language model, so a course is real teaching material rather than an outline. Several models sit behind the platform and it falls back automatically if one is unavailable, which is why generation keeps working when a provider has a bad day.',
   },
   {
     question: 'Is the free plan really free forever?',
@@ -35,9 +35,9 @@ const faqs: FAQItem[] = [
       'Yes! Pro users can export courses as PDF and PowerPoint. You own all content generated through Coursbit and can use it commercially.',
   },
   {
-    question: "What's the difference between image and video courses?",
+    question: 'What does a generated course actually contain?',
     answer:
-      'Image courses include text content with relevant images. Video courses (Pro only) also include curated video resources and enhanced multimedia content.',
+      'Each course is a set of modules, and every module holds several written lessons — around 700 to 900 words each, with worked examples, key takeaways and common mistakes. Every lesson gets a matching illustration, and the course comes with a quiz, flashcards and a certificate on completion.',
   },
   {
     question: 'Do I get a certificate for every course?',

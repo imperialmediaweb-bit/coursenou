@@ -27,8 +27,8 @@ export default {
         white: '#F0F0FF',
       },
       fontFamily: {
-        display: ['Inter', 'sans-serif'],
-        sans: ['"DM Sans"', 'sans-serif'],
+        display: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['"DM Sans"', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       keyframes: {
         marquee: {

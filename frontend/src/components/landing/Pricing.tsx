@@ -47,15 +47,14 @@ const plans: PricingPlan[] = [
     badgeStyle:
       'bg-accent text-white text-xs px-3 py-1 rounded-full absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap',
     featured: true,
-    monthlyPrice: '$12',
-    yearlyPrice: '$79',
-    yearlyMonthly: '$6.58',
+    monthlyPrice: '$9.99',
+    yearlyPrice: '$79.99',
+    yearlyMonthly: '$6.67',
     priceSuffix: '/month',
     yearlySuffix: '/month',
     features: [
       'Everything in Free',
       'Unlimited courses',
-      'Video courses',
       '20 topics per course',
       'Audio courses',
       'PPT export',
@@ -72,15 +71,14 @@ const plans: PricingPlan[] = [
     badge: 'Best Value',
     badgeStyle:
       'bg-accent/20 text-accent border border-accent/30 text-xs px-3 py-1 rounded-full absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap',
-    monthlyPrice: '$6.58',
-    yearlyPrice: '$79',
-    yearlyMonthly: '$6.58',
+    monthlyPrice: '$6.67',
+    yearlyPrice: '$79.99',
+    yearlyMonthly: '$6.67',
     priceSuffix: '/mo',
     yearlySuffix: '/year',
     features: [
       'Everything in Free',
       'Unlimited courses',
-      'Video courses',
       '20 topics per course',
       'Audio courses',
       'PPT export',
@@ -117,13 +115,13 @@ export default function Pricing() {
     if (plan.name === 'Free') return { amount: '$0', suffix: '/forever' };
     if (plan.name === 'Pro') {
       return isYearly
-        ? { amount: '$6.58', suffix: '/month' }
-        : { amount: '$12', suffix: '/month' };
+        ? { amount: '$6.67', suffix: '/month' }
+        : { amount: '$9.99', suffix: '/month' };
     }
     // Pro Yearly
     return isYearly
-      ? { amount: '$79', suffix: '/year' }
-      : { amount: '$6.58', suffix: '/mo' };
+      ? { amount: '$79.99', suffix: '/year' }
+      : { amount: '$6.67', suffix: '/mo' };
   }
 
   return (
@@ -174,7 +172,7 @@ export default function Pricing() {
             >
               Yearly
               <span className="bg-accent/20 text-accent text-[10px] font-semibold px-1.5 py-0.5 rounded-full">
-                Save 40%
+                Save 33%
               </span>
             </button>
 

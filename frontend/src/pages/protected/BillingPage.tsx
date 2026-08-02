@@ -10,7 +10,7 @@ const PLANS = [
     name: 'Pro Monthly',
     price: '$9.99',
     period: '/month',
-    features: ['Unlimited courses', 'Video courses', '20 topics per course', 'Audio & PPT export', 'AI Chatbot', 'Priority support'],
+    features: ['Unlimited courses', '20 topics per course', 'Audio & PPT export', 'AI Chatbot', 'Priority support'],
   },
   {
     id: 'yearly',
@@ -125,7 +125,7 @@ export default function BillingPage() {
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-sm text-muted font-sans mb-3">Your plan includes:</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {['Unlimited courses', 'Video courses', '20 topics/course', 'AI Chatbot', 'Audio download', 'PDF & PPT export', 'Certificates', 'Flashcards', 'No ads'].map((f) => (
+                {['Unlimited courses', '20 topics/course', 'AI Chatbot', 'Audio download', 'PDF & PPT export', 'Certificates', 'Flashcards', 'No ads'].map((f) => (
                   <div key={f} className="flex items-center gap-2 text-sm text-prose font-sans">
                     <svg className="w-3.5 h-3.5 text-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />

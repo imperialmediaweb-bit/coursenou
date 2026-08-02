@@ -2,49 +2,59 @@ import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 
-interface ProviderCard {
-  name: string;
+/**
+ * What the platform does, rather than which suppliers sit behind it.
+ *
+ * This section used to name Gemini, GPT-4o and Claude with their logos, and
+ * closed with "switch between providers instantly from your settings" — which
+ * is no longer true, since the model is an operator setting rather than a user
+ * preference. Naming the suppliers also invited the reader to see the product
+ * as a thin wrapper over them.
+ */
+
+interface Capability {
+  title: string;
   gradientFrom: string;
   gradientTo: string;
   subtitle: string;
   features: string[];
 }
 
-const providers: ProviderCard[] = [
+const capabilities: Capability[] = [
   {
-    name: 'Gemini',
+    title: 'Complete courses',
     gradientFrom: 'from-blue-400',
     gradientTo: 'to-cyan-400',
-    subtitle: "Google's most capable AI",
+    subtitle: 'Not an outline — the whole thing',
     features: [
-      'Free to use',
-      '23 languages supported',
-      'Fast generation speed',
-      'Multimodal capabilities',
+      'Structured modules and lessons',
+      'Worked examples and code',
+      'Illustrations for every lesson',
+      'Ready to read or hand out',
     ],
   },
   {
-    name: 'GPT-4o',
+    title: '23 languages',
     gradientFrom: 'from-green-400',
     gradientTo: 'to-emerald-400',
-    subtitle: "OpenAI's flagship model",
+    subtitle: 'Written natively, not translated',
     features: [
-      'Highest content quality',
-      'Detailed explanations',
-      'Advanced reasoning',
-      'Perfect for pro users',
+      'European, Asian and Middle Eastern',
+      'Course, quiz and certificate alike',
+      'Correct accents throughout',
+      'One click at creation',
     ],
   },
   {
-    name: 'Claude',
+    title: 'Built to keep going',
     gradientFrom: 'from-orange-400',
     gradientTo: 'to-amber-400',
-    subtitle: "Anthropic's intelligent assistant",
+    subtitle: 'One model failing is not your problem',
     features: [
-      'Nuanced understanding',
-      'Long-form content',
-      'Safety focused',
-      'Excellent for education',
+      'Several models behind the scenes',
+      'Falls back automatically',
+      'Each lesson written on its own',
+      'A slow answer never loses your work',
     ],
   },
 ];
@@ -59,7 +69,7 @@ const cardVariants = {
     x: 0,
     transition: {
       duration: 0.7,
-      ease: "easeOut",
+      ease: 'easeOut',
     },
   },
 } as const;
@@ -77,16 +87,13 @@ export default function AIProviders() {
           transition={{ duration: 0.6 }}
           className="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white text-center mb-16"
         >
-          Powered by the best AI in the world
+          Built for courses people actually finish
         </motion.h2>
 
-        <div
-          ref={ref}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto"
-        >
-          {providers.map((provider, i) => (
+        <div ref={ref} className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+          {capabilities.map((capability, i) => (
             <motion.div
-              key={provider.name}
+              key={capability.title}
               custom={i === 0 ? -1 : 1}
               initial="hidden"
               animate={inView ? 'visible' : 'hidden'}
@@ -98,19 +105,16 @@ export default function AIProviders() {
               transition={{ duration: 0.25 }}
               className="bg-surface border border-border rounded-2xl p-8 group cursor-default"
             >
-              {/* Logo */}
               <h3
-                className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r ${provider.gradientFrom} ${provider.gradientTo} bg-clip-text text-transparent mb-1`}
+                className={`text-2xl sm:text-3xl font-bold bg-gradient-to-r ${capability.gradientFrom} ${capability.gradientTo} bg-clip-text text-transparent mb-1`}
               >
-                {provider.name}
+                {capability.title}
               </h3>
 
-              {/* Subtitle */}
-              <p className="text-prose text-sm mb-6">{provider.subtitle}</p>
+              <p className="text-prose text-sm mb-6">{capability.subtitle}</p>
 
-              {/* Features */}
               <ul className="space-y-3">
-                {provider.features.map((feature) => (
+                {capability.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <Check className="w-4 h-4 text-accent shrink-0" />
                     <span className="text-sm text-prose">{feature}</span>
@@ -128,7 +132,7 @@ export default function AIProviders() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="text-center text-sm text-muted mt-8"
         >
-          Switch between providers instantly from your settings
+          Type a subject, review the outline, and the course writes itself.
         </motion.p>
       </div>
     </section>

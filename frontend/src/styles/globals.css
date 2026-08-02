@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+/* The web fonts used to be pulled in here with @import, which is
+   render-blocking: the browser painted nothing until Google Fonts answered.
+   On a network where fonts.googleapis.com is slow or blocked the landing page
+   simply stayed blank. They are loaded from index.html now, without blocking. */
 
 /* Noise texture overlay */
 .noise-overlay::before {

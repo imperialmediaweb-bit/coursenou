@@ -25,7 +25,7 @@ const features: Feature[] = [
     icon: Sparkles,
     title: 'AI Course Generation',
     description:
-      'Switch between Google Gemini and OpenAI GPT-4o. Generate structured courses with theory, images, and quizzes.',
+      'Type a subject and get a structured course — modules, written lessons, illustrations and a quiz.',
     featured: true,
   },
   {

@@ -22,7 +22,7 @@ const steps: Step[] = [
     icon: Sparkles,
     title: 'AI generates everything',
     description:
-      'Gemini or GPT-4o creates a full structured course: theory, images, video links, and a complete quiz.',
+      'A full structured course appears: modules, written lessons, illustrations, and a quiz to check what stuck.',
   },
   {
     number: '03',

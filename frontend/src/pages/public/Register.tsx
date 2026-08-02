@@ -62,7 +62,7 @@ export default function Register() {
           </h2>
 
           <p className="text-prose text-base leading-relaxed mb-8">
-            Start generating AI-powered courses in minutes. No credit card required. Get access to Gemini, GPT-4o, and Claude.
+            Start generating complete courses in minutes. No credit card required.
           </p>
 
           <div className="space-y-4">

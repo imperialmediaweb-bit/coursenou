@@ -7,6 +7,17 @@
     <meta name="theme-color" content="#0F1117" />
     <meta name="description" content="CourseBit - Generate complete AI-powered courses in minutes with Gemini and GPT-4o" />
     <title>CourseBit - AI Course Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- media="print" keeps this out of the render path; the script below
+         promotes it to all once it has loaded, so a slow or unreachable font
+         host can never hold up the page. -->
+    <link
+      id="webfonts"
+      rel="stylesheet"
+      media="print"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap"
+    />
     <style>
       /* Painted before any JS runs, so a slow or failed boot shows the app's
          own dark surface instead of a blank white page. */
@@ -43,6 +54,15 @@
       </div>
     </div>
     <script>
+      // Apply the web fonts once they arrive. Bound in script rather than as
+      // an onload attribute, which the Content-Security-Policy blocks.
+      var webfonts = document.getElementById('webfonts');
+      if (webfonts) {
+        webfonts.addEventListener('load', function () {
+          webfonts.media = 'all';
+        });
+      }
+
       // Bound here rather than as an onclick attribute — the site's
       // Content-Security-Policy sets script-src-attr 'none', which blocks
       // every inline handler.

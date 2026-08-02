@@ -70,7 +70,7 @@ export default function Login() {
           </h2>
 
           <p className="text-prose text-base leading-relaxed mb-8">
-            Create structured courses with AI-generated lessons, quizzes, certificates, and multimedia. Powered by Gemini, GPT-4o, and Claude.
+            Type a subject and get a complete course — written lessons, illustrations, quizzes and a certificate.
           </p>
 
           {/* Feature pills */}

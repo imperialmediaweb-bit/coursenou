@@ -17,7 +17,7 @@ const features = [
     icon: HiSparkles,
     title: 'AI Generation',
     description:
-      'Generate complete courses with Gemini or GPT-4o. Rich content with images, structured topics, and subtopics.',
+      'Type a subject and get a complete course — structured modules, written lessons and an illustration for each one.',
   },
   {
     icon: HiMusicalNote,
@@ -79,12 +79,13 @@ const plans = [
     period: '',
     badge: null,
     features: [
-      { text: '3 courses per month', included: true },
-      { text: 'Gemini AI provider', included: true },
+      { text: 'Up to 10 courses', included: true },
+      { text: 'Up to 5 topics per course', included: true },
       { text: '23 languages', included: true },
-      { text: 'Basic quizzes', included: true },
+      { text: 'Quizzes and certificates', included: true },
+      { text: 'PDF export', included: true },
+      { text: 'PowerPoint export', included: false },
       { text: 'Audio generation', included: false },
-      { text: 'PDF/PPT export', included: false },
       { text: 'Priority support', included: false },
     ],
   },
@@ -95,11 +96,12 @@ const plans = [
     badge: null,
     features: [
       { text: 'Unlimited courses', included: true },
-      { text: 'Gemini + GPT-4o', included: true },
+      { text: 'Up to 20 topics per course', included: true },
       { text: '23 languages', included: true },
-      { text: 'Advanced quizzes', included: true },
+      { text: 'Quizzes and certificates', included: true },
+      { text: 'PDF export', included: true },
+      { text: 'PowerPoint export', included: true },
       { text: 'Audio generation', included: true },
-      { text: 'PDF/PPT export', included: true },
       { text: 'Priority support', included: false },
     ],
   },
@@ -110,11 +112,12 @@ const plans = [
     badge: 'Most Popular',
     features: [
       { text: 'Unlimited courses', included: true },
-      { text: 'Gemini + GPT-4o', included: true },
+      { text: 'Up to 20 topics per course', included: true },
       { text: '23 languages', included: true },
-      { text: 'Advanced quizzes', included: true },
+      { text: 'Quizzes and certificates', included: true },
+      { text: 'PDF export', included: true },
+      { text: 'PowerPoint export', included: true },
       { text: 'Audio generation', included: true },
-      { text: 'PDF/PPT export', included: true },
       { text: 'Priority support', included: true },
     ],
   },
@@ -151,19 +154,19 @@ const faqs = [
       'CourseBit is an AI-powered course generation platform. You enter any topic and our AI creates a complete, structured course with topics, subtopics, images, quizzes, and more. It is designed for educators, students, and professionals who want to create or consume learning content quickly.',
   },
   {
-    question: 'Which AI providers does CourseBit use?',
+    question: 'How is the course written?',
     answer:
-      'CourseBit supports two leading AI providers: Google Gemini and OpenAI GPT-4o. Free plan users have access to Gemini, while paid plan users can choose between both providers for course generation.',
+      'Every lesson is written individually by a large language model, so what you get is teaching material rather than an outline. Several models sit behind the platform and it falls back automatically if one is unavailable, so generation keeps working when a provider has a bad day.',
   },
   {
     question: 'What languages are supported?',
     answer:
-      'CourseBit supports 23 languages including English, Spanish, French, German, Portuguese, Italian, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish, Swedish, Danish, Norwegian, Finnish, Czech, Romanian, Hungarian, and Thai.',
+      'CourseBit supports 23 languages including English, Spanish, French, German, Portuguese, Italian, Dutch, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Polish, Swedish, Danish, Norwegian, Finnish, Czech, Romanian, Hungarian, and Greek.',
   },
   {
     question: 'What is the difference between the plans?',
     answer:
-      'The Free plan gives you 3 courses per month with Gemini AI. The Monthly plan ($9.99/mo) unlocks unlimited courses, GPT-4o access, audio generation, and PDF/PPT export. The Yearly plan ($79.99/yr) includes everything in Monthly plus priority support, saving you 33% compared to monthly billing.',
+      'The Free plan gives you up to 10 courses of 5 topics each, with quizzes, certificates and PDF export. The Monthly plan ($9.99/mo) removes the course limit, raises the cap to 20 topics, and adds PowerPoint export and audio. The Yearly plan ($79.99/yr) is everything in Monthly plus priority support, and works out 33% cheaper than paying monthly.',
   },
   {
     question: 'What export formats are available?',
@@ -190,8 +193,8 @@ export default function Home() {
               Generate Complete AI Courses in Minutes
             </h1>
             <p className="text-lg md:text-xl text-indigo-100 mb-10 max-w-2xl mx-auto">
-              Powered by Gemini and GPT-4o. Create courses in 23 languages with
-              quizzes, audio, certificates, and more — all with the power of AI.
+              Type a subject and get a complete course in minutes — in any of 23
+              languages, with quizzes, audio and certificates.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link

@@ -59,15 +59,13 @@ export default function CTASection() {
           animate={inView ? stagger(0.3).animate : stagger(0.3).initial}
           className="flex items-center justify-center gap-4 mt-8"
         >
-          <span className="text-xs text-muted font-sans">Gemini</span>
+          <span className="text-xs text-muted font-sans">23 languages</span>
           <span className="w-1 h-1 rounded-full bg-muted" />
-          <span className="text-xs text-muted font-sans">GPT-4o</span>
+          <span className="text-xs text-muted font-sans">PDF &amp; PowerPoint</span>
           <span className="w-1 h-1 rounded-full bg-muted" />
-          <span className="text-xs text-muted font-sans">Claude</span>
+          <span className="text-xs text-muted font-sans">Quizzes</span>
           <span className="w-1 h-1 rounded-full bg-muted" />
-          <span className="text-xs text-muted font-sans">
-            Powered by leading AI
-          </span>
+          <span className="text-xs text-muted font-sans">Certificates</span>
         </motion.div>
       </div>
     </section>
