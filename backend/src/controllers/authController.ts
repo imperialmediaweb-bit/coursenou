@@ -8,6 +8,7 @@ import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
+import { sanitizeUser } from '../utils/sanitizeUser';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -66,15 +67,7 @@ export const register = async (
       path: '/',
     });
 
-    const {
-      password: _pw,
-      refreshToken: _rt,
-      resetPasswordToken: _rp,
-      resetPasswordExpires: _re,
-      ...userSafe
-    } = newUser as any;
-
-    res.status(201).json({ accessToken, user: userSafe });
+    res.status(201).json({ accessToken, user: sanitizeUser(newUser as any) });
   } catch (error) {
     next(error);
   }
@@ -171,15 +164,7 @@ export const login = async (
       path: '/',
     });
 
-    const {
-      password: _pw,
-      refreshToken: _rt,
-      resetPasswordToken: _rp2,
-      resetPasswordExpires: _re2,
-      ...userWithoutSensitive
-    } = user as any;
-
-    res.json({ accessToken, user: userWithoutSensitive });
+    res.json({ accessToken, user: sanitizeUser(user as any) });
   } catch (error) {
     next(error);
   }
@@ -371,7 +356,9 @@ export const me = async (
       throw new AppError('Authentication required', 401);
     }
 
-    res.json({ user: req.user });
+    // req.user comes straight from the database row, so it still carries the
+    // password hash and refresh token until this strips them.
+    res.json({ user: sanitizeUser(req.user as any) });
   } catch (error) {
     next(error);
   }

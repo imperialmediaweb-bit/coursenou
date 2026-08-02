@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
+import { sanitizeUser } from '../utils/sanitizeUser';
 
 export const getProfile = async (
   req: AuthRequest,
@@ -48,9 +49,7 @@ export const updateProfile = async (
       },
     });
 
-    // Exclude password from response
-    const { password: _, ...userWithoutPassword } = updated;
-    res.json(userWithoutPassword);
+    res.json(sanitizeUser(updated));
   } catch (error) {
     next(error);
   }
