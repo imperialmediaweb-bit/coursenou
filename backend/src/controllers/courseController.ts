@@ -14,6 +14,7 @@ import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
 import { PLAN_LIMITS } from '../utils/planLimits';
 import { getAiProvider } from '../services/settingsService';
+import { createDownloadToken, verifyDownloadToken } from '../utils/downloadToken';
 
 const generateTopicsSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -371,19 +372,80 @@ export const generateAudio = async (
   }
 };
 
-export const exportPDF = async (
+
+/**
+ * Issues a short-lived signed link for a download.
+ *
+ * Ownership and plan are checked here, on an authenticated request, because
+ * `window.open` cannot send an Authorization header — so the download route
+ * itself has only the token to go on.
+ */
+export const getDownloadToken = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get course from demo store or DB
+    const format = req.query.format === 'ppt' ? 'ppt' : 'pdf';
+    const user = req.user!;
+    const userId = String(user._id || (user as any).id);
+
     let course: any = getDemoCourse(req.params.id);
     if (!course) {
       course = await prisma.course.findUnique({ where: { id: req.params.id } });
     }
     if (!course) {
       throw new AppError('Course not found', 404);
+    }
+
+    const isDemo = userId === 'demo-user-id-001';
+    if (!isDemo && course.userId !== userId) {
+      throw new AppError('Not authorized to export this course', 403);
+    }
+
+    if (format === 'ppt') {
+      const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
+      if (!limits.allowPptExport) {
+        throw new AppError('PowerPoint export requires a paid plan.', 403);
+      }
+    }
+
+    const token = createDownloadToken(format, course.id || req.params.id, userId);
+    res.json({
+      success: true,
+      data: { url: `/api/courses/${req.params.id}/export/${format}?t=${token}` },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const exportPDF = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    let course: any = getDemoCourse(req.params.id);
+    if (!course) {
+      course = await prisma.course.findUnique({ where: { id: req.params.id } });
+    }
+    if (!course) {
+      throw new AppError('Course not found', 404);
+    }
+
+    // A course is private. This route used to be open to anyone holding the
+    // link, because the download is opened in a new tab and cannot send an
+    // Authorization header; a signed token carries that authorisation instead.
+    const sessionUserId = req.user ? String(req.user._id || (req.user as any).id) : null;
+    const tokenUserId = verifyDownloadToken(req.query.t, 'pdf', course.id || req.params.id);
+    const allowed =
+      course.userId === 'demo-user-id-001' ||
+      (sessionUserId && course.userId === sessionUserId) ||
+      (tokenUserId && (tokenUserId === course.userId || tokenUserId === 'demo-user-id-001'));
+
+    if (!allowed) {
+      throw new AppError('This download link is invalid or has expired.', 403);
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -399,19 +461,33 @@ export const exportPPT = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user = req.user!;
-    const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
-
-    if (!limits.allowPptExport) {
-      throw new AppError('PowerPoint export requires a paid plan.', 403);
-    }
-
     let course: any = getDemoCourse(req.params.id);
     if (!course) {
       course = await prisma.course.findUnique({ where: { id: req.params.id } });
     }
     if (!course) {
       throw new AppError('Course not found', 404);
+    }
+
+    // Reached either from an authenticated call or, when opened in a new tab,
+    // with a signed token. The plan check happened when the token was issued.
+    const tokenUserId = verifyDownloadToken(req.query.t, 'ppt', course.id || req.params.id);
+
+    if (!tokenUserId) {
+      const user = req.user;
+      if (!user) {
+        throw new AppError('This download link is invalid or has expired.', 403);
+      }
+      const userId = String(user._id || (user as any).id);
+      if (course.userId !== userId && userId !== 'demo-user-id-001') {
+        throw new AppError('Not authorized to export this course', 403);
+      }
+      const limits = PLAN_LIMITS[user.plan as keyof typeof PLAN_LIMITS];
+      if (!limits.allowPptExport) {
+        throw new AppError('PowerPoint export requires a paid plan.', 403);
+      }
+    } else if (tokenUserId !== course.userId && tokenUserId !== 'demo-user-id-001') {
+      throw new AppError('This download link is invalid or has expired.', 403);
     }
 
     const pptBuffer = await exportService.generatePPT(course);

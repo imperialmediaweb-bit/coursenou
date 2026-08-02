@@ -10,8 +10,9 @@ import {
   generateAudio,
   exportPDF,
   exportPPT,
+  getDownloadToken,
 } from '../controllers/courseController';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, optionalAuth } from '../middleware/auth';
 import { aiLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
@@ -23,6 +24,10 @@ router.get('/:id', authMiddleware, getCourseById);
 router.delete('/:id', authMiddleware, deleteCourse);
 router.post('/:id/complete', authMiddleware, completeCourse);
 router.post('/:id/generate-audio', authMiddleware, generateAudio);
-router.get('/:id/export/pdf', exportPDF);
-router.get('/:id/export/ppt', authMiddleware, exportPPT);
+router.get('/:id/download-token', authMiddleware, getDownloadToken);
+// These are opened in a new tab, which cannot send an Authorization header, so
+// they authorise with the signed token issued above. optionalAuth still lets a
+// same-session request through without one.
+router.get('/:id/export/pdf', optionalAuth, exportPDF);
+router.get('/:id/export/ppt', optionalAuth, exportPPT);
 export default router;

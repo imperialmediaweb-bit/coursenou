@@ -306,17 +306,44 @@ export default function CourseView() {
     }
   };
 
-  const handleExportPdf = () => {
-    window.open(`/api/courses/${id}/export/pdf`, '_blank');
-    toast.success('PDF page opened — press Ctrl+P to save');
+  /**
+   * A new tab cannot carry the Authorization header, so we ask the server for
+   * a short-lived signed link first and open that. Before this, the PDF route
+   * had no authentication at all and the PowerPoint route answered 401 to
+   * every click.
+   */
+  const openExport = async (format: 'pdf' | 'ppt') => {
+    // Open the tab synchronously, or the pop-up blocker stops it once an
+    // await has run.
+    const tab = window.open('', '_blank');
+    try {
+      const res = await api.get(`/courses/${id}/download-token?format=${format}`);
+      const url = res.data?.data?.url;
+      if (!url) throw new Error('no url');
+      if (tab) tab.location.href = url;
+      else window.location.href = url;
+      return true;
+    } catch (err: any) {
+      tab?.close();
+      toast.error(
+        err.response?.data?.error || `Could not prepare the ${format.toUpperCase()} export.`
+      );
+      return false;
+    }
   };
 
-  const handleExportPpt = () => {
+  const handleExportPdf = async () => {
+    if (await openExport('pdf')) {
+      toast.success('PDF page opened — press Ctrl+P to save');
+    }
+  };
+
+  const handleExportPpt = async () => {
     if (!isPaid) {
       toast.error('PPT export requires a paid plan. Upgrade to unlock!');
       return;
     }
-    window.open(`/api/courses/${id}/export/ppt`, '_blank');
+    await openExport('ppt');
   };
 
   const handleAudio = () => {

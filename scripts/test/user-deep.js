@@ -224,16 +224,28 @@ const PASS = 'password123';
 
     // --------------------------------------------------------------- exports
     context.current = 'exports';
-    const pdf = await page.request.get(`${BASE}/api/courses/${courseId}/export/pdf`);
+    // The export button asks for a signed link first, because a new tab cannot
+    // send an Authorization header. Follow the same path a click does.
+    const pdfLink = await api('GET', `/courses/${courseId}/download-token?format=pdf`);
+    const pdfUrl = pdfLink.body?.data?.url;
+    ck('a signed PDF link is issued', !!pdfUrl, `status ${pdfLink.status}`);
+
+    const unsigned = await page.request.get(`${BASE}/api/courses/${courseId}/export/pdf`);
+    ck('the PDF is not readable without a link', unsigned.status() === 403,
+       `status ${unsigned.status()}`);
+
+    const pdf = await page.request.get(`${BASE}${pdfUrl}`);
     const pdfHtml = await pdf.text();
     ck('the PDF export returns a document', pdf.status() === 200 && pdfHtml.includes('<!DOCTYPE html>'));
     ck('the export carries no raw markdown', !pdfHtml.includes('**'));
     ck('the export has a cover and contents',
        pdfHtml.includes('sheet cover') && pdfHtml.includes('sheet contents'));
 
-    const ppt = await page.request.get(`${BASE}/api/courses/${courseId}/export/ppt`, {
-      headers: { Authorization: `Bearer ${await token()}` },
-    });
+    const pptLink = await api('GET', `/courses/${courseId}/download-token?format=ppt`);
+    const pptUrl = pptLink.body?.data?.url;
+    ck('a signed PowerPoint link is issued', !!pptUrl, `status ${pptLink.status}`);
+
+    const ppt = await page.request.get(`${BASE}${pptUrl}`);
     const pptBytes = await ppt.body();
     ck('the PowerPoint export returns a real file',
        ppt.status() === 200 && pptBytes.slice(0, 2).toString() === 'PK',

@@ -71,6 +71,38 @@ export const authMiddleware = async (
   }
 };
 
+/**
+ * Attaches the user when a valid token is present, and simply carries on when
+ * it is not.
+ *
+ * File downloads open in a new tab and so arrive with no Authorization header.
+ * They authorise with a signed token in the query string instead, but a
+ * same-session request should still be recognised — this lets the handler see
+ * whichever of the two it gets, and decide for itself.
+ */
+export const optionalAuth = async (
+  req: AuthRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(authHeader.substring(7), process.env.JWT_SECRET!) as any;
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (user) {
+      req.user = { ...user, _id: user.id } as any;
+    }
+  } catch {
+    // An unusable token is treated as no token; the handler decides.
+  }
+
+  next();
+};
+
 export const adminMiddleware = async (
   req: AuthRequest,
   _res: Response,
