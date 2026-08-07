@@ -56,7 +56,7 @@ const steps = [
     number: '1',
     title: 'Enter Your Topic',
     description:
-      'Type any topic you want to learn about. Choose your language, AI provider, and content type.',
+      'Type any topic you want to learn about, pick one of 23 languages, and choose how many modules it should cover.',
   },
   {
     number: '2',

@@ -70,7 +70,7 @@ export default function Register() {
               '10 free courses with AI generation',
               'PDF export & certificates',
               'AI quizzes in 23 languages',
-              'Switch AI providers anytime',
+              'Export to PDF and PowerPoint',
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">

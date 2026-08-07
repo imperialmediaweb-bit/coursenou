@@ -5,7 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0F1117" />
-    <meta name="description" content="CourseBit - Generate complete AI-powered courses in minutes with Gemini and GPT-4o" />
+    <meta name="description" content="Coursbit — type a subject and get a complete course in minutes: written lessons, illustrations, quizzes, certificates, and PDF or PowerPoint export, in 23 languages." />
     <title>CourseBit - AI Course Generator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -54,13 +54,33 @@
       </div>
     </div>
     <script>
-      // Apply the web fonts once they arrive. Bound in script rather than as
-      // an onload attribute, which the Content-Security-Policy blocks.
+      // Apply the web fonts once they arrive.
+      //
+      // The listener has to be attached in script rather than as an onload
+      // attribute, because the Content-Security-Policy blocks inline handlers.
+      // That introduces a race the attribute version does not have: on a
+      // repeat visit the stylesheet comes from cache and can finish loading
+      // before this line runs, so the event is missed and the fonts stay at
+      // media="print" forever. Three guards close it — apply immediately if it
+      // is already parsed, listen if it is not, and promote anyway after a
+      // moment. Promoting a stylesheet that failed to load is harmless.
       var webfonts = document.getElementById('webfonts');
       if (webfonts) {
-        webfonts.addEventListener('load', function () {
+        var applyWebfonts = function () {
           webfonts.media = 'all';
-        });
+        };
+        var alreadyLoaded = false;
+        try {
+          alreadyLoaded = !!webfonts.sheet;
+        } catch (e) {
+          alreadyLoaded = false;
+        }
+        if (alreadyLoaded) {
+          applyWebfonts();
+        } else {
+          webfonts.addEventListener('load', applyWebfonts);
+          setTimeout(applyWebfonts, 3000);
+        }
       }
 
       // Bound here rather than as an onclick attribute — the site's
