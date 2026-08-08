@@ -4,6 +4,8 @@ import { AppError } from '../utils/AppError';
 import prisma from '../utils/prisma';
 import { emailService } from '../services/emailService';
 import { getAiProvider, setAiProvider, configuredProviders, AI_PROVIDERS, AiProvider } from '../services/settingsService';
+import { SECRET_GROUPS, listSecrets, setSecret, clearSecret, isKnownSecret } from '../services/secretsService';
+import { testProviderCredentials } from '../services/credentialCheck';
 
 export const getStats = async (
   _req: AuthRequest,
@@ -568,6 +570,71 @@ export const updateSettings = async (
 
     await setAiProvider(aiProvider);
     res.json({ aiProvider, providers: AI_PROVIDERS, configured: configuredProviders() });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * The credentials screen. Never returns a stored secret — only whether it is
+ * set, where it came from, and a masked preview.
+ */
+export const getSecrets = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    res.json({ groups: SECRET_GROUPS, settings: await listSecrets() });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSecret = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { name, value } = req.body;
+
+    if (typeof name !== 'string' || !isKnownSecret(name)) {
+      throw new AppError('Unknown setting', 400);
+    }
+    if (typeof value !== 'string') {
+      throw new AppError('A value is required', 400);
+    }
+
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      await clearSecret(name);
+    } else {
+      await setSecret(name, trimmed);
+    }
+
+    // Never echo the value back. The same shape as GET, so the panel can use
+    // one response handler for both.
+    console.log(`Setting ${name} ${trimmed === '' ? 'cleared' : 'updated'} from the admin panel`);
+    res.json({ groups: SECRET_GROUPS, settings: await listSecrets() });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Tries a credential for real rather than only checking it is present, so the
+ * owner finds out here instead of when a customer fails to pay.
+ */
+export const testSecret = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const group = String(req.params.group);
+    const result = await testProviderCredentials(group);
+    res.json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

@@ -11,6 +11,7 @@ import prisma from './utils/prisma';
 import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { seedLegalPages } from './utils/seed';
+import { applyStoredSecrets } from './services/secretsService';
 
 // Startup validation: ensure JWT secrets exist. If not set, derive STABLE
 // secrets from DATABASE_URL (unique per deployment, never in source, and —
@@ -200,6 +201,16 @@ app.listen(parseInt(PORT as string), '0.0.0.0', async () => {
     }
 
     await seedLegalPages();
+
+    // Credentials entered in the admin panel are stored encrypted and applied
+    // here, so the rest of the code keeps reading process.env exactly as it
+    // does when they come from the hosting environment. Re-read periodically so
+    // a change made in the panel takes effect without a restart.
+    const applied = await applyStoredSecrets();
+    if (applied > 0) {
+      console.log(`Applied ${applied} setting(s) saved in the admin panel`);
+    }
+    setInterval(() => { applyStoredSecrets().catch(() => {}); }, 60_000).unref();
   } catch (err: any) {
     console.error('DB connection issue:', err.message);
     console.log('Demo login still works without DB');

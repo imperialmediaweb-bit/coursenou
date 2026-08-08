@@ -22,6 +22,7 @@ import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { AdminStats } from '../../types';
 import AiProviderSetting from '../../components/admin/AiProviderSetting';
+import CredentialsPanel from '../../components/admin/CredentialsPanel';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -217,8 +218,9 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-8">
         <AiProviderSetting />
+        <CredentialsPanel />
       </div>
     </div>
   );

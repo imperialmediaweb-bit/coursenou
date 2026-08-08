@@ -11,6 +11,9 @@ import {
   getBlogs, getBlogById,
   getSettings,
   updateSettings,
+  getSecrets,
+  updateSecret,
+  testSecret,
   createBlog,
   updateBlog,
   deleteBlog,
@@ -32,6 +35,10 @@ router.get('/courses', getCourses);
 router.delete('/courses/:id', deleteCourse);
 router.get('/invoices', getInvoices);
 router.get('/settings', getSettings);
+// API keys and credentials, editable from the panel instead of the host.
+router.get('/secrets', getSecrets);
+router.put('/secrets', updateSecret);
+router.post('/secrets/:group/test', testSecret);
 router.put('/settings', updateSettings);
 router.get('/blogs', getBlogs);
 router.get('/blogs/:id', getBlogById);
