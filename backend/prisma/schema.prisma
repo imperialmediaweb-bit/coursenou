@@ -123,7 +123,10 @@ model Invoice {
   provider          String
   status            String   @default("paid")
   receiptUrl        String?
-  providerInvoiceId String?
+  /// The provider event that produced this invoice. Unique, because that is
+  /// what makes handling a webhook idempotent: a redelivery cannot insert a
+  /// second row, so it cannot extend a subscription twice.
+  providerInvoiceId String?  @unique
   createdAt         DateTime @default(now())
 
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)

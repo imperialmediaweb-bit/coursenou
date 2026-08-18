@@ -9,6 +9,7 @@ import { AppError } from '../utils/AppError';
 import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
 import { sanitizeUser } from '../utils/sanitizeUser';
+import { applyPlanExpiry } from '../utils/planExpiry';
 
 const registerSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -139,6 +140,11 @@ export const login = async (
     if (!isMatch) {
       throw new AppError('Invalid email or password', 401);
     }
+
+    // Signing in is not an authenticated request, so the middleware that
+    // expires a lapsed plan never ran here — and the response said "Monthly"
+    // while every paid feature was refused.
+    await applyPlanExpiry(user);
 
     const accessToken = jwt.sign(
       { userId: user.id },
@@ -312,7 +318,13 @@ export const resetPassword = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { token, password } = req.body;
+    // The route declares the token as a path parameter and the app sends it
+    // there. Reading it only from the body meant every reset came back
+    // "Token and new password are required" — password recovery could not
+    // succeed for anybody. The body is still accepted so an older client, or
+    // anyone holding a link from before, keeps working.
+    const token = req.params.token || req.body.token;
+    const { password } = req.body;
 
     if (!token || !password) {
       throw new AppError('Token and new password are required', 400);

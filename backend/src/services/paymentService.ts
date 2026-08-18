@@ -26,17 +26,51 @@ const extendFrom = (currentExpiry: Date | null | undefined, plan: BillingPlan): 
 
 class PaymentService {
   /**
-   * Providers retry webhooks until they get a 2xx, and a retry used to create
-   * a second invoice and send a second email. An invoice row keyed by the
-   * provider's own event id makes replays no-ops.
+   * Claims a provider event, so that only one delivery of it does any work.
+   *
+   * Providers retry webhooks until they get a 2xx, and a retry used to create a
+   * second invoice and send a second email. Checking for an existing row first
+   * fixed the ordinary case but not the real one: Stripe can deliver the same
+   * event twice at the same moment, both checks find nothing, and the customer
+   * gets two months for one payment. Money is exactly the wrong place for a
+   * read-then-write race.
+   *
+   * So the invoice row is the claim rather than a record written afterwards.
+   * `providerInvoiceId` is unique, the insert either wins or violates the
+   * constraint, and the database decides — atomically, whatever the ordering.
    */
-  private async alreadyProcessed(eventId?: string): Promise<boolean> {
-    if (!eventId) return false;
-    const existing = await prisma.invoice.findFirst({
-      where: { providerInvoiceId: eventId },
-      select: { id: true },
-    });
-    return !!existing;
+  private async claimEvent(params: {
+    userId: string;
+    amount: number;
+    currency: string;
+    plan: BillingPlan;
+    provider: Provider;
+    receiptUrl?: string;
+    /** Falls back to the subscription id when a provider sends no event id. */
+    key?: string;
+  }): Promise<boolean> {
+    try {
+      await prisma.invoice.create({
+        data: {
+          userId: params.userId,
+          amount: params.amount,
+          currency: params.currency,
+          plan: params.plan,
+          provider: params.provider,
+          status: 'paid',
+          receiptUrl: params.receiptUrl || null,
+          providerInvoiceId: params.key || null,
+        },
+      });
+      return true;
+    } catch (error: any) {
+      // P2002 is the unique violation: someone else already claimed this event.
+      if (error?.code === 'P2002') {
+        console.log(`Skipping duplicate ${params.provider} event ${params.key}`);
+        return false;
+      }
+      throw error;
+    }
   }
 
   async activateSubscription(params: {
@@ -52,15 +86,23 @@ class PaymentService {
     const { userId, plan, provider, providerId, amount, currency, receiptUrl, eventId } =
       params;
 
-    if (await this.alreadyProcessed(eventId)) {
-      console.log(`Skipping duplicate ${provider} event ${eventId}`);
-      return prisma.user.findUnique({ where: { id: userId } });
-    }
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new Error('User not found');
     }
+
+    // Claimed before anything is extended, so a replay cannot add a second
+    // period. If this loses the race the event has already been handled.
+    const claimed = await this.claimEvent({
+      userId: user.id,
+      amount,
+      currency,
+      plan,
+      provider,
+      receiptUrl,
+      key: eventId || providerId,
+    });
+    if (!claimed) return user as any;
 
     const planExpiresAt = extendFrom(user.planExpiresAt, plan);
 
@@ -84,19 +126,6 @@ class PaymentService {
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: providerData,
-    });
-
-    await prisma.invoice.create({
-      data: {
-        userId: user.id,
-        amount,
-        currency,
-        plan,
-        provider,
-        status: 'paid',
-        receiptUrl: receiptUrl || null,
-        providerInvoiceId: eventId || providerId,
-      },
     });
 
     await prisma.subscription.upsert({
@@ -179,32 +208,25 @@ class PaymentService {
   }): Promise<void> {
     const { userId, plan, provider, amount, currency, receiptUrl, eventId } = params;
 
-    if (await this.alreadyProcessed(eventId)) {
-      console.log(`Skipping duplicate ${provider} renewal ${eventId}`);
-      return;
-    }
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
+
+    const claimed = await this.claimEvent({
+      userId: user.id,
+      amount,
+      currency,
+      plan,
+      provider,
+      receiptUrl,
+      key: eventId,
+    });
+    if (!claimed) return;
 
     const planExpiresAt = extendFrom(user.planExpiresAt, plan);
 
     await prisma.user.update({
       where: { id: userId },
       data: { plan, planExpiresAt },
-    });
-
-    await prisma.invoice.create({
-      data: {
-        userId: user.id,
-        amount,
-        currency,
-        plan,
-        provider,
-        status: 'paid',
-        receiptUrl: receiptUrl || null,
-        providerInvoiceId: eventId || null,
-      },
     });
 
     await prisma.subscription.updateMany({

@@ -244,6 +244,10 @@ export const webhook = async (
           providerId: subscriptionId,
           amount: priceFor('paypal', plan as 'monthly' | 'yearly').major,
           currency: priceFor('paypal', plan as 'monthly' | 'yearly').currency,
+          // PayPal's own event id. Without it this was keyed on the
+          // subscription, which the browser-return path claims first — so an
+          // activation arriving by both routes counted twice.
+          eventId: `paypal:${event.id}`,
         });
         break;
       }

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../utils/AppError';
+import { applyPlanExpiry } from '../utils/planExpiry';
 import prisma from '../utils/prisma';
 
 export interface AuthRequest extends Request {
@@ -45,15 +46,7 @@ export const authMiddleware = async (
       throw new AppError('User not found', 401);
     }
 
-    // Auto-expire plan if planExpiresAt has passed
-    if (user.plan !== 'free' && user.planExpiresAt && new Date(user.planExpiresAt) < new Date()) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { plan: 'free', planExpiresAt: null },
-      });
-      (user as any).plan = 'free';
-      (user as any).planExpiresAt = null;
-    }
+    await applyPlanExpiry(user);
 
     // Alias _id to id so all controllers work identically for real and demo users
     req.user = { ...user, _id: user.id } as any;
