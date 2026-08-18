@@ -3,6 +3,22 @@
 These drive the real application in a real browser. They exist because static
 checks and API tests both reported green while whole screens were broken.
 
+## Running all of them
+
+```bash
+DATABASE_URL=... npm run build
+DATABASE_URL=... bash scripts/test/all.sh
+```
+
+That starts its own server with the rate limits lifted, runs every suite in
+order, and prints one tally. Use it rather than running the suites back to back
+by hand: each registers a handful of accounts, production allows fifteen
+registrations an hour from one address, and somewhere around the fourth suite
+everything starts failing with 429 in a way that reads like a catastrophic
+regression.
+
+## Running one of them
+
 They need the app running against a database:
 
 ```bash

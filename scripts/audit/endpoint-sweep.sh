@@ -32,12 +32,27 @@ T=$(curl -s -X POST $B/auth/login -H 'Content-Type: application/json' \
 A="Authorization: Bearer $T"
 
 # Real ids so path params resolve to something.
+#
+# Each of these feeds the next, so a failure here has to stop the run. Carrying
+# an empty value forward built a malformed request body, and the sweep then
+# reported a JSON parse error from the server as though it were the finding —
+# when the actual cause was a rate limit on the very first call.
+need() {
+  if [ -z "$2" ]; then
+    echo "Could not set up: $1 came back empty. The server said:"
+    echo "  $3" | head -3
+    exit 1
+  fi
+}
+
 TD=$(curl -s -X POST $B/courses/generate-topics -H 'Content-Type: application/json' -H "$A" \
       -d '{"title":"Sweep Course","numTopics":1,"language":"English"}' \
-      | python3 -c "import sys,json;print(json.dumps(json.load(sys.stdin)['data']))")
+      | python3 -c "import sys,json;print(json.dumps(json.load(sys.stdin)['data']))" 2>/dev/null)
+need "topic generation" "$TD" "$(curl -s -o /dev/null -w 'HTTP %{http_code}' -X POST $B/courses/generate-topics -H 'Content-Type: application/json' -H "$A" -d '{"title":"Sweep Course","numTopics":1,"language":"English"}')"
 CID=$(curl -s -X POST $B/courses/generate -H 'Content-Type: application/json' -H "$A" \
       -d "{\"title\":\"Sweep Course\",\"topics\":$TD,\"language\":\"English\",\"type\":\"image\"}" \
-      | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(d.get('id') or d.get('_id'))")
+      | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(d.get('id') or d.get('_id'))" 2>/dev/null)
+need "course generation" "$CID" "no course id came back"
 SHARE=$(curl -s $B/courses/$CID -H "$A" | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['shareToken'])")
 ME=$(curl -s $B/auth/me -H "$A" | python3 -c "import sys,json;print(json.load(sys.stdin)['user']['id'])")
 curl -s -X POST $B/courses/$CID/complete -H "$A" >/dev/null

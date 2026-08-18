@@ -62,6 +62,7 @@ Node 20 · Express · Prisma · PostgreSQL
 ## Tests
 
 ```bash
+bash scripts/test/all.sh                   # every suite, one tally
 npm run audit                              # static checks, no server needed
 node scripts/test/user-deep.js             # the learner side, in a real browser
 node scripts/test/admin-flow.js            # the admin area, in a real browser
