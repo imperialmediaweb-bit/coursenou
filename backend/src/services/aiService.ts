@@ -178,8 +178,26 @@ class AIService {
       }
     }
 
-    // All providers failed or none configured — use demo content
-    console.log('All AI providers failed or none configured — using demo generation');
+    // All providers failed or none configured — use demo content.
+    //
+    // Recorded, because otherwise this is the quietest failure in the product:
+    // a wrong key or an exhausted quota serves every customer placeholder text
+    // that reads like a real course, the platform looks perfectly healthy, and
+    // nobody finds out until somebody complains about the writing. Written to
+    // the usage log at zero cost so it shows up in the admin panel next to
+    // everything else.
+    console.error('All AI providers failed or none configured — serving template content');
+    if (usageContext) {
+      recordUsage({
+        userId: usageContext.userId,
+        courseId: usageContext.courseId,
+        operation: usageContext.operation,
+        provider: 'fallback',
+        model: 'template',
+        inputTokens: 0,
+        outputTokens: 0,
+      }).catch(() => {});
+    }
     return this.generateDemoContent(prompt, demoKind);
   }
 

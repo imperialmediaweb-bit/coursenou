@@ -14,6 +14,7 @@ import api from '../../services/api';
 interface UsageSummary {
   budget: { limit: number | null; spent: number; exceeded: boolean; remaining: number | null };
   perUserBudget: { limit: number | null; atLimit: number; nearLimit: number };
+  fallback: { callsThisMonth: number };
   month: { calls: number; cost: number; inputTokens: number; outputTokens: number };
   allTime: { calls: number; cost: number };
   perCourse: { courses: number; averageCost: number };
@@ -121,7 +122,7 @@ export default function UsagePanel() {
   }
   if (!usage) return null;
 
-  const { budget, perUserBudget, month, allTime, perCourse } = usage;
+  const { budget, perUserBudget, fallback, month, allTime, perCourse } = usage;
   const usedFraction =
     budget.limit && budget.limit > 0 ? Math.min(1, budget.spent / budget.limit) : 0;
 
@@ -132,6 +133,21 @@ export default function UsagePanel() {
         Every call to a model is recorded with its token counts and priced from the rate
         table. This is what the platform costs to run.
       </p>
+
+      {fallback.callsThisMonth > 0 && (
+        <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 p-4">
+          <p className="text-sm font-medium text-red-300">
+            {fallback.callsThisMonth} generation{fallback.callsThisMonth === 1 ? '' : 's'} served
+            template text this month
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            No AI provider answered, so customers received the built-in placeholder content
+            instead of a real course — and nothing on their screen said so. Check the API
+            keys below: a wrong key, an expired card at the provider, or an exhausted quota
+            all look like this.
+          </p>
+        </div>
+      )}
 
       {budget.limit === null ? (
         <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">

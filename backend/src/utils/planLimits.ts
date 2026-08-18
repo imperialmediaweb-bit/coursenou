@@ -95,5 +95,19 @@ export const SUPPORTED_LANGUAGES = [
   'Hungarian', 'Greek',
 ] as const;
 
+/**
+ * Case-insensitive on purpose. The interface sends "English", but the API is
+ * public and a caller sending "english" is not making a mistake worth a 400 —
+ * the first version of this rejected exactly that and broke perfectly ordinary
+ * requests.
+ */
 export const isSupportedLanguage = (value: string): boolean =>
-  (SUPPORTED_LANGUAGES as readonly string[]).includes(value);
+  (SUPPORTED_LANGUAGES as readonly string[]).some(
+    (language) => language.toLowerCase() === value.trim().toLowerCase()
+  );
+
+/** The canonical spelling, so what gets stored is consistent however it arrived. */
+export const canonicalLanguage = (value: string): string =>
+  (SUPPORTED_LANGUAGES as readonly string[]).find(
+    (language) => language.toLowerCase() === value.trim().toLowerCase()
+  ) || value;

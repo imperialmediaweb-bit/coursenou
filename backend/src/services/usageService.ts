@@ -157,6 +157,8 @@ export interface UsageSummary {
   budget: { limit: number | null; spent: number; exceeded: boolean; remaining: number | null };
   /** The per-account ceiling, and how many accounts are near or past it. */
   perUserBudget: { limit: number | null; atLimit: number; nearLimit: number };
+  /** Generations served from the built-in template because no provider answered. */
+  fallback: { callsThisMonth: number };
   month: { calls: number; cost: number; inputTokens: number; outputTokens: number };
   allTime: { calls: number; cost: number };
   perCourse: { courses: number; averageCost: number };
@@ -229,9 +231,17 @@ export async function usageSummary(): Promise<UsageSummary> {
     }
   }
 
+  // Template content served because no provider answered. A wrong key looks
+  // exactly like a working platform from the outside, so this number is the
+  // only early warning there is.
+  const fallbackCalls = await prisma.aiUsage.count({
+    where: { provider: 'fallback', createdAt: { gte: monthStart } },
+  });
+
   return {
     budget,
     perUserBudget: { limit: perUserLimit, atLimit, nearLimit },
+    fallback: { callsThisMonth: fallbackCalls },
     month: {
       calls: monthAgg._count,
       cost: monthAgg._sum.costUsd || 0,

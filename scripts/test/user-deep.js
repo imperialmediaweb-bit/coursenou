@@ -270,8 +270,31 @@ const PASS = 'password123';
 
     // ---------------------------------------------------- completion + cert
     context.current = 'certificate';
+
+    // A certificate now has to be earned. This used to mark the course complete
+    // after reading two lessons out of however many were generated, which is
+    // precisely the thing that makes a certificate worthless — so read the whole
+    // course first, the way a learner would.
+    const wholeCourse = await api('GET', `/courses/${courseId}`);
+    const allTopics = wholeCourse.body?.data?.topics ?? [];
+    const everySubtopic = allTopics.flatMap((topic, t) =>
+      (topic.subtopics ?? []).map((_, s) => `${t}-${s}`)
+    );
+    ck('the generated course has lessons to read', everySubtopic.length > 0,
+       `${everySubtopic.length} subtopics`);
+
+    const readAll = await api('PUT', `/progress/${courseId}`, {
+      visitedSubtopics: everySubtopic,
+      lastVisitedTopic: Math.max(0, allTopics.length - 1),
+      lastVisitedSubtopic: 0,
+      timeSpent: 600,
+    });
+    ck('reading every lesson reaches 100%', readAll.body?.data?.percentage === 100,
+       String(readAll.body?.data?.percentage));
+
     const complete = await api('POST', `/courses/${courseId}/complete`);
-    ck('a course can be completed', complete.status === 200, `status ${complete.status}`);
+    ck('a course can be completed once it has been read', complete.status === 200,
+       `status ${complete.status}`);
 
     const certs = await api('GET', '/certificates');
     const cert = (certs.body?.data ?? [])[0];

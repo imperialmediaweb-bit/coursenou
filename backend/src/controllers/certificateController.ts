@@ -38,9 +38,22 @@ export const getCertificateById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    // Deliberately readable by anyone holding the id: a certificate is a
+    // shareable achievement, the id is an unguessable cuid, and the printable
+    // page is opened with window.open, which cannot send an auth header.
+    //
+    // Selected rather than returned whole, though. The row carries the account
+    // id of the person who earned it, and that is not part of the achievement.
     const certificate = await prisma.certificate.findUnique({
       where: { id: req.params.id },
-      include: { course: { select: { title: true } } },
+      select: {
+        id: true,
+        courseName: true,
+        userName: true,
+        issuedAt: true,
+        downloadUrl: true,
+        course: { select: { title: true } },
+      },
     });
 
     if (!certificate) {

@@ -92,6 +92,8 @@ run "reconcile"          bash "$REPO/scripts/test/reconcile.sh"
 run "billing & plans"    bash "$REPO/scripts/test/billing.sh"
 run "SEO"                bash "$REPO/scripts/test/seo.sh"
 run "analytics"          bash "$REPO/scripts/test/analytics.sh"
+run "generation"         bash "$REPO/scripts/test/generation.sh"
+run "export & sharing"   bash "$REPO/scripts/test/export.sh"
 run "user (browser)"     node "$REPO/scripts/test/user-deep.js"
 run "admin (browser)"    node "$REPO/scripts/test/admin-flow.js"
 

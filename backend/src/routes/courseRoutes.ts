@@ -6,6 +6,7 @@ import {
   getCourseById,
   deleteCourse,
   completeCourse,
+  resetShareLink,
   getSharedCourse,
   generateAudio,
   exportPDF,
@@ -23,6 +24,9 @@ router.get('/share/:shareToken', getSharedCourse);
 router.get('/:id', authMiddleware, getCourseById);
 router.delete('/:id', authMiddleware, deleteCourse);
 router.post('/:id/complete', authMiddleware, completeCourse);
+// Retires the current share link and issues a new one, so a link sent to the
+// wrong person can be taken back.
+router.post('/:id/reset-share', authMiddleware, resetShareLink);
 router.post('/:id/generate-audio', authMiddleware, generateAudio);
 router.get('/:id/download-token', authMiddleware, getDownloadToken);
 // These are opened in a new tab, which cannot send an Authorization header, so

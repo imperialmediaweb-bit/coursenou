@@ -12,7 +12,7 @@ import { buildCourseDocument } from '../services/courseDocument';
 import { certificateService } from '../services/certificateService';
 import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
-import { PLAN_LIMITS, isSupportedLanguage } from '../utils/planLimits';
+import { PLAN_LIMITS, isSupportedLanguage, canonicalLanguage } from '../utils/planLimits';
 import { getAiProvider } from '../services/settingsService';
 import { assertWithinBudget } from '../utils/aiBudget';
 import { createDownloadToken, verifyDownloadToken } from '../utils/downloadToken';
@@ -22,7 +22,8 @@ const generateTopicsSchema = z.object({
   language: z
     .string()
     .min(1, 'Language is required')
-    .refine(isSupportedLanguage, { message: 'That language is not supported' }),
+    .refine(isSupportedLanguage, { message: 'That language is not supported' })
+    .transform(canonicalLanguage),
   numTopics: z.number().int().min(1).max(20),
   type: z.string().optional(),
 }).passthrough();
@@ -32,7 +33,8 @@ const generateCourseSchema = z.object({
   language: z
     .string()
     .min(1, 'Language is required')
-    .refine(isSupportedLanguage, { message: 'That language is not supported' }),
+    .refine(isSupportedLanguage, { message: 'That language is not supported' })
+    .transform(canonicalLanguage),
   type: z.enum(['image', 'video']),
   topics: z.array(
     z.object({
@@ -292,6 +294,39 @@ export const deleteCourse = async (
   }
 };
 
+/**
+ * Issues a new share link for a course, retiring the old one.
+ *
+ * Sharing was one-way: the token was minted with the course and never changed,
+ * so a link sent to the wrong person worked for ever and the only way to take
+ * it back was to delete the course. "Share" is not a feature until "stop
+ * sharing" exists.
+ */
+export const resetShareLink = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const course = await prisma.course.findUnique({ where: { id: req.params.id } });
+    if (!course) {
+      throw new AppError('Course not found', 404);
+    }
+    if (course.userId !== req.user!._id.toString()) {
+      throw new AppError('Not authorized to change this course', 403);
+    }
+
+    const updated = await prisma.course.update({
+      where: { id: course.id },
+      data: { shareToken: uuidv4() },
+    });
+
+    res.status(200).json({ success: true, data: { shareToken: updated.shareToken } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const completeCourse = async (
   req: AuthRequest,
   res: Response,
@@ -308,6 +343,30 @@ export const completeCourse = async (
     }
 
     const user = req.user!;
+
+    // A certificate that can be claimed without opening the course is a picture,
+    // not a credential — and somebody will put it on a CV. The recorded progress
+    // has to say the material was actually read.
+    const progress = await prisma.courseProgress.findUnique({
+      where: { userId_courseId: { userId: String(user._id || user.id), courseId: course.id } },
+    });
+    const COMPLETION_THRESHOLD = 90;
+    if (!course.isCompleted && (progress?.percentage ?? 0) < COMPLETION_THRESHOLD) {
+      throw new AppError(
+        `Finish the course before claiming the certificate — you are at ${Math.round(progress?.percentage ?? 0)}%.`,
+        403
+      );
+    }
+
+    // Completing twice must not mint a second certificate. Providers of far more
+    // careful systems than this one have shipped exactly that bug.
+    const existing = await prisma.certificate.findFirst({
+      where: { userId: String(user._id || user.id), courseId: course.id },
+    });
+    if (existing) {
+      res.status(200).json({ success: true, data: { course, certificate: existing } });
+      return;
+    }
 
     await prisma.course.update({
       where: { id: course.id },
@@ -354,7 +413,22 @@ export const getSharedCourse = async (
       throw new AppError('Shared course not found', 404);
     }
 
-    const course = await prisma.course.findUnique({ where: { shareToken } });
+    // Selected rather than returned whole. A shared link is opened by strangers,
+    // and the row carries the owner's account id — not a secret, but not theirs
+    // to hand out either, and it is the field that lets someone tie two shared
+    // courses to the same person.
+    const course = await prisma.course.findUnique({
+      where: { shareToken },
+      select: {
+        id: true,
+        title: true,
+        language: true,
+        type: true,
+        topics: true,
+        isCompleted: true,
+        createdAt: true,
+      },
+    });
     if (!course) {
       throw new AppError('Shared course not found', 404);
     }
