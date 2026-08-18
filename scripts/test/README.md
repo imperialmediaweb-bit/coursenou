@@ -26,8 +26,15 @@ Settings: a profile change, and a password change proven by signing in again
 with the new password.
 
 **`admin-flow.js`** — sign in as an administrator, then every admin screen, the
-platform AI provider control, and a blog post created through the editor and
-confirmed in the list.
+platform AI provider control, the AI cost panel checked against rows whose cost
+is known to the cent, and a blog post created through the editor and confirmed
+in the list.
+
+**`ai-budget.sh`** — the monthly AI spending ceiling. Prices a handful of calls
+by hand and compares, then starts the server with a $1 limit and requires
+generation to be refused with a 503 once the limit is passed and to work again
+once it is not. A limit that is recorded but never enforced is worse than no
+limit, because it reads like protection.
 
 ## The two rules that make them worth running
 

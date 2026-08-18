@@ -184,8 +184,16 @@ security problem:
 | `FRONTEND_URL` | Used in email links and payment redirects |
 | `SECRET_ENCRYPTION_KEY` | Encrypts the stored credentials. Derived automatically if unset |
 | `PORT`, `NODE_ENV` | Set by the host |
+| `AI_MONTHLY_BUDGET_USD` | The monthly ceiling on AI spend. Kept out of the panel so it cannot be raised by whoever is spending it. Unset means no ceiling |
 
 See `backend/.env.example` for the full list.
+
+### Capping what AI can cost you
+
+`AI_MONTHLY_BUDGET_USD=200` stops generation for the rest of the calendar month
+once $200 of recorded spend is reached. What has been spent, and what a course
+costs on average, is in **AI Cost** in the admin panel. Set this before opening
+an unlimited plan to the public — see [OPERATING.md](OPERATING.md#the-spending-ceiling).
 
 ---
 

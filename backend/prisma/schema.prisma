@@ -255,3 +255,26 @@ model AppSetting {
   value     String
   updatedAt DateTime @updatedAt
 }
+
+/// One row per call to an AI provider. Without this there is no way to answer
+/// the first question anyone sensible asks about a product with "unlimited" in
+/// the offer: what does a course actually cost to produce?
+model AiUsage {
+  id           String   @id @default(cuid())
+  userId       String?
+  courseId     String?
+  provider     String
+  model        String
+  /// topics | lesson | quiz | flashcards | summary | chat
+  operation    String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  /// Computed at write time from the rate table, so a later price change does
+  /// not silently rewrite history.
+  costUsd      Float    @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([courseId])
+}

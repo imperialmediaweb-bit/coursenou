@@ -13,6 +13,7 @@ Everything an operator needs is at `/admin`.
 | Messages | What people sent through the contact form |
 | Content | Edit the terms, privacy, refund and cancellation pages |
 | Invoices | Every payment recorded |
+| AI Cost | What generation costs — per course, per user, per month |
 | AI Provider | Which model writes the courses |
 | API keys | Every credential, with a live check per provider |
 
@@ -45,12 +46,34 @@ themselves are created in Stripe and referenced by ID.
 | Email | Free up to a few hundred a day |
 
 **The AI cost is the one that matters**, and it is the one number worth
-measuring before promoting an unlimited plan. Generate ten courses on a real
-key, read the spend in the provider's dashboard, divide. Then compare that to
-the monthly price and decide what "unlimited" can safely mean.
+watching before promoting an unlimited plan.
 
-Set a hard spending limit in each provider's console. It is the only thing that
-turns a runaway cost into a failed request instead of a bill.
+Every call to a model is logged with its token counts and priced at the point
+of writing, so the figure survives a later price change. **AI Cost** in the
+admin panel shows the result: cost per course, cost this month, a breakdown by
+model and by operation, and the ten accounts spending the most. Compare the
+cost per course to the monthly price and you know what "unlimited" can safely
+mean, rather than guessing.
+
+The rate table lives in `backend/src/services/usageService.ts`. Providers change
+prices; check it against a real invoice and correct it, or override a single
+figure with `AI_PRICE_<MODEL>_IN` / `_OUT` (dollars per million tokens, model
+name upper-cased with non-alphanumerics as underscores — for example
+`AI_PRICE_GPT_4O_IN=2.5`).
+
+### The spending ceiling
+
+Set `AI_MONTHLY_BUDGET_USD` to a number of dollars. Once the calendar month's
+recorded spend reaches it, generation returns 503 with a message asking the
+customer to try again later, and the panel shows the bar in red. Spend resets
+on the first of the month.
+
+Left unset there is no ceiling, and the admin panel says so — worth changing
+before taking real customers. One loop in someone else's script otherwise runs
+up a provider bill that arrives weeks later with no warning.
+
+Set a hard limit in each provider's console as well. Two independent ceilings
+is the right number when one of them is your own code.
 
 ## Rebranding
 

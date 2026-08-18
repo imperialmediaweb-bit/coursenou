@@ -11,6 +11,7 @@ import {
   getBlogs, getBlogById,
   getSettings,
   updateSettings,
+  getUsage,
   getSecrets,
   updateSecret,
   testSecret,
@@ -34,6 +35,8 @@ router.delete('/users/:id', deleteUser);
 router.get('/courses', getCourses);
 router.delete('/courses/:id', deleteCourse);
 router.get('/invoices', getInvoices);
+// What the platform has spent on AI, and on whom.
+router.get('/usage', getUsage);
 router.get('/settings', getSettings);
 // API keys and credentials, editable from the panel instead of the host.
 router.get('/secrets', getSecrets);

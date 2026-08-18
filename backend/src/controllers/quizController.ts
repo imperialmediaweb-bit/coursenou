@@ -34,8 +34,9 @@ export const generateQuiz = async (
         await getAiProvider(),
         courseContent,
         demoCourse?.language || 'English',
-        10
-      );
+        10,
+      { userId: String(req.user!._id), courseId, operation: 'quiz' }
+    );
       req.user!.aiCreditsUsed += 1;
       if (String(req.user!._id || req.user!._id) !== 'demo-user-id-001') {
         await prisma.user.update({ where: { id: String(req.user!._id) }, data: { aiCreditsUsed: req.user!.aiCreditsUsed } });
@@ -64,7 +65,8 @@ export const generateQuiz = async (
       await getAiProvider(),
       courseContent,
       course.language,
-      10
+      10,
+      { userId: String(req.user!._id), courseId, operation: 'quiz' }
     );
 
     const quiz = await prisma.quiz.upsert({

@@ -17,7 +17,7 @@ const {
   register,
   login,
 } = require('./lib/harness');
-const { promoteToAdmin, disconnect } = require('./lib/db');
+const { promoteToAdmin, seedKnownAiUsage, disconnect } = require('./lib/db');
 
 const EMAIL = `admin${Date.now()}@test.local`;
 const PASS = 'password123';
@@ -72,6 +72,41 @@ const PASS = 'password123';
       const disabled = await buttons.evaluateAll((els) => els.filter((e) => e.disabled).length);
       ck('providers without an API key cannot be selected', disabled >= 1, `${disabled} disabled`);
     }
+
+    // ---------------- AI cost ----------------
+    // Seeded with rows whose cost is known to the cent, so the panel is checked
+    // against arithmetic rather than against "some number appeared".
+    context.current = 'ai cost';
+    const expected = await seedKnownAiUsage(EMAIL);
+    await page.goto(`${BASE}/admin`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(3000);
+    const cost = await page.locator('body').innerText();
+
+    ck('the AI cost section renders', /AI Cost/i.test(cost));
+    ck(
+      'cost per course is the average of the recorded courses',
+      cost.includes(`$${expected.averagePerCourse.toFixed(2)}`),
+      'expected $2.00'
+    );
+    ck(
+      'the month total matches what was recorded',
+      cost.includes(`$${expected.monthCost.toFixed(2)}`),
+      'expected $4.00'
+    );
+    ck('the course count behind the average is shown', /averaged over 2 courses/i.test(cost));
+    ck('spend is broken down by model', /gpt-4o/i.test(cost));
+    ck(
+      'spend is broken down by operation',
+      /Lesson content/i.test(cost) && /Quizzes/i.test(cost),
+      'expected both seeded operations'
+    );
+    ck('the heaviest accounts are listed', cost.includes(EMAIL));
+    ck(
+      'a missing spending cap is called out',
+      !process.env.AI_MONTHLY_BUDGET_USD
+        ? /No monthly spending limit/i.test(cost)
+        : /Monthly budget/i.test(cost)
+    );
 
     // ---------------- create a post through the editor ----------------
     context.current = 'blog editor';

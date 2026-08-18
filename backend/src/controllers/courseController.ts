@@ -14,6 +14,7 @@ import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
 import { PLAN_LIMITS } from '../utils/planLimits';
 import { getAiProvider } from '../services/settingsService';
+import { assertWithinBudget } from '../utils/aiBudget';
 import { createDownloadToken, verifyDownloadToken } from '../utils/downloadToken';
 
 const generateTopicsSchema = z.object({
@@ -57,7 +58,15 @@ export const generateTopics = async (
       );
     }
 
-    const topics = await aiService.generateTopics(await getAiProvider(), title, language, numTopics);
+    await assertWithinBudget();
+
+    const topics = await aiService.generateTopics(
+      await getAiProvider(),
+      title,
+      language,
+      numTopics,
+      { userId: String(user._id || user.id), operation: 'topics' }
+    );
 
     if (String(user._id || user.id) !== 'demo-user-id-001') {
       try {
@@ -106,6 +115,8 @@ export const generateCourse = async (
       }
     }
 
+    await assertWithinBudget();
+
     let courseContent;
     try {
       courseContent = await aiService.generateCourse(
@@ -113,7 +124,8 @@ export const generateCourse = async (
         topics,
         type,
         language,
-        title
+        title,
+        { userId: String(user._id || user.id), operation: 'lesson' }
       );
     } catch (aiError: any) {
       console.error('Course generation failed:', aiError.message);

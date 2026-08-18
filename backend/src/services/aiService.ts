@@ -1,8 +1,30 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import Anthropic from '@anthropic-ai/sdk';
+import { recordUsage } from './usageService';
 
 type AIProvider = 'gemini' | 'openai' | 'claude';
+
+// Named here so the calls and the price table in usageService cannot drift.
+const OPENAI_MODEL = 'gpt-4o';
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514';
+
+/** What a provider produced, and what it consumed producing it. */
+interface GenerationResult {
+  text: string;
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+/** Who and what a call was for, so its cost can be attributed. */
+export interface UsageContext {
+  userId?: string | null;
+  courseId?: string | null;
+  operation: string;
+}
 
 /** Which shape of demo content to emit when no provider is reachable. */
 type DemoKind = 'lesson';
@@ -33,7 +55,7 @@ interface QuizQuestion {
 class AIService {
   private getGemini() {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    return genAI.getGenerativeModel({ model: GEMINI_MODEL });
   }
 
   private getOpenAI() {
@@ -52,38 +74,57 @@ class AIService {
     }
   }
 
-  private async generateWithGemini(prompt: string): Promise<string> {
+  private async generateWithGemini(prompt: string): Promise<GenerationResult> {
     const model = this.getGemini();
     const result = await model.generateContent(prompt);
     const response = result.response;
-    return response.text();
+    const usage = (response as any).usageMetadata || {};
+    return {
+      text: response.text(),
+      provider: 'gemini',
+      model: GEMINI_MODEL,
+      inputTokens: usage.promptTokenCount || 0,
+      outputTokens: usage.candidatesTokenCount || 0,
+    };
   }
 
-  private async generateWithOpenAI(prompt: string): Promise<string> {
+  private async generateWithOpenAI(prompt: string): Promise<GenerationResult> {
     const openai = this.getOpenAI();
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: OPENAI_MODEL,
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
       // Lessons are long-form now; the default cap truncated them mid-sentence.
       max_tokens: 4000,
     });
-    return response.choices[0]?.message?.content || '';
+    return {
+      text: response.choices[0]?.message?.content || '',
+      provider: 'openai',
+      model: OPENAI_MODEL,
+      inputTokens: response.usage?.prompt_tokens || 0,
+      outputTokens: response.usage?.completion_tokens || 0,
+    };
   }
 
   private getClaude() {
     return new Anthropic({ apiKey: process.env.CLAUDE_API_KEY! });
   }
 
-  private async generateWithClaude(prompt: string): Promise<string> {
+  private async generateWithClaude(prompt: string): Promise<GenerationResult> {
     const client = this.getClaude();
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     });
     const block = message.content[0];
-    return block.type === 'text' ? block.text : '';
+    return {
+      text: block.type === 'text' ? block.text : '',
+      provider: 'claude',
+      model: CLAUDE_MODEL,
+      inputTokens: message.usage?.input_tokens || 0,
+      outputTokens: message.usage?.output_tokens || 0,
+    };
   }
 
   private hasApiKey(provider: AIProvider): boolean {
@@ -97,7 +138,8 @@ class AIService {
   private async generate(
     provider: AIProvider,
     prompt: string,
-    demoKind?: DemoKind
+    demoKind?: DemoKind,
+    usageContext?: UsageContext
   ): Promise<string> {
     // Try requested provider, fallback to any available, then use mock
     const providers: AIProvider[] = [provider, 'openai', 'gemini', 'claude'];
@@ -107,9 +149,28 @@ class AIService {
       if (this.hasApiKey(p) && !tried.includes(p)) {
         tried.push(p);
         try {
-          if (p === 'gemini') return await this.generateWithGemini(prompt);
-          if (p === 'claude') return await this.generateWithClaude(prompt);
-          return await this.generateWithOpenAI(prompt);
+          const result =
+            p === 'gemini'
+              ? await this.generateWithGemini(prompt)
+              : p === 'claude'
+              ? await this.generateWithClaude(prompt)
+              : await this.generateWithOpenAI(prompt);
+
+          // Recorded rather than awaited: the cost of a course must never be
+          // the reason a course fails to arrive.
+          if (usageContext) {
+            recordUsage({
+              userId: usageContext.userId,
+              courseId: usageContext.courseId,
+              operation: usageContext.operation,
+              provider: result.provider,
+              model: result.model,
+              inputTokens: result.inputTokens,
+              outputTokens: result.outputTokens,
+            }).catch(() => {});
+          }
+
+          return result.text;
         } catch (error: any) {
           console.error(`AI provider ${p} failed:`, error.message || error);
           // Continue to next provider
@@ -186,7 +247,8 @@ class AIService {
     provider: AIProvider,
     title: string,
     language: string,
-    numTopics: number
+    numTopics: number,
+    usage?: UsageContext
   ): Promise<TopicResult[]> {
     const prompt = `Generate a structured course outline for the topic: "${title}" in ${language} language.
 Create exactly ${numTopics} main topics, each with exactly 4 subtopics.
@@ -206,7 +268,7 @@ Requirements:
 - No subtopic may repeat across topics
 - All content must be in ${language}`;
 
-    const result = await this.generate(provider, prompt);
+    const result = await this.generate(provider, prompt, undefined, usage);
     const topics = this.parseJSON<TopicResult[]>(result);
     return topics.slice(0, numTopics);
   }
@@ -216,7 +278,8 @@ Requirements:
     topics: TopicResult[],
     type: 'image' | 'video',
     language: string,
-    courseTitle = ''
+    courseTitle = '',
+    usage?: UsageContext
   ): Promise<TopicContent[]> {
     // One request per lesson rather than one per topic. Asking a model for
     // three 500-word lessons inside a single JSON array reliably produced
@@ -254,7 +317,8 @@ Requirements:
           courseTitle,
           job.topicTitle,
           job.subtopic,
-          language
+          language,
+          usage
         );
       }
     };
@@ -303,13 +367,14 @@ IMAGE: <search query>`;
     courseTitle: string,
     topicTitle: string,
     subtopic: string,
-    language: string
+    language: string,
+    usage?: UsageContext
   ): Promise<SubtopicContent> {
     const prompt = this.lessonPrompt(courseTitle, topicTitle, subtopic, language);
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const raw = await this.generate(provider, prompt, 'lesson');
+        const raw = await this.generate(provider, prompt, 'lesson', usage);
         const lesson = this.parseLesson(raw, courseTitle, topicTitle, subtopic);
         // A stub response is worse than a retry — a real lesson is long.
         if (lesson.content.length >= 400) return lesson;
@@ -403,7 +468,8 @@ Take a realistic scenario from your own context and apply the idea end to end. W
     provider: AIProvider,
     courseContent: string,
     language: string,
-    numQuestions: number
+    numQuestions: number,
+    usage?: UsageContext
   ): Promise<QuizQuestion[]> {
     const prompt = `Based on the following course content, generate ${numQuestions} multiple-choice quiz questions in ${language}.
 
@@ -428,14 +494,15 @@ Requirements:
 - Questions should cover different topics from the course
 - All content must be in ${language}`;
 
-    const result = await this.generate(provider, prompt);
+    const result = await this.generate(provider, prompt, undefined, usage);
     return this.parseJSON<QuizQuestion[]>(result);
   }
 
   async chatResponse(
     provider: AIProvider,
     message: string,
-    courseContext: string
+    courseContext: string,
+    usage?: UsageContext
   ): Promise<string> {
     const prompt = `You are an AI tutor helping a student understand course material. Be helpful, concise, and educational.
 
@@ -446,7 +513,7 @@ Student question: ${message}
 
 Provide a clear, helpful response. If the question is unrelated to the course, politely redirect to course topics.`;
 
-    return this.generate(provider, prompt);
+    return this.generate(provider, prompt, undefined, usage);
   }
 }
 

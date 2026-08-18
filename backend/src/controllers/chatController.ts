@@ -33,7 +33,7 @@ export const chat = async (
       } else {
         context = 'This is a demo course. Provide helpful responses about general learning topics.';
       }
-      const response = await aiService.chatResponse(await getAiProvider(), message.trim(), context);
+      const response = await aiService.chatResponse(await getAiProvider(), message.trim(), context, { userId: String(user._id), courseId: req.params.courseId, operation: 'chat' });
       user.aiCreditsUsed += 1;
       if (String(user._id || user.id) !== 'demo-user-id-001') {
         await prisma.user.update({ where: { id: String(user._id) }, data: { aiCreditsUsed: user.aiCreditsUsed } });
@@ -61,7 +61,7 @@ export const chat = async (
     }
     context = context.substring(0, 6000);
 
-    const response = await aiService.chatResponse(await getAiProvider(), message.trim(), context);
+    const response = await aiService.chatResponse(await getAiProvider(), message.trim(), context, { userId: String(user._id), courseId: req.params.courseId, operation: 'chat' });
 
     user.aiCreditsUsed += 1;
     if (String(user._id || user.id) !== 'demo-user-id-001') {

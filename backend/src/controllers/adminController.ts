@@ -6,6 +6,7 @@ import { emailService } from '../services/emailService';
 import { getAiProvider, setAiProvider, configuredProviders, AI_PROVIDERS, AiProvider } from '../services/settingsService';
 import { SECRET_GROUPS, listSecrets, setSecret, clearSecret, isKnownSecret } from '../services/secretsService';
 import { testProviderCredentials } from '../services/credentialCheck';
+import { usageSummary } from '../services/usageService';
 
 export const getStats = async (
   _req: AuthRequest,
@@ -635,6 +636,24 @@ export const testSecret = async (
     const group = String(req.params.group);
     const result = await testProviderCredentials(group);
     res.json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * What the platform has spent on AI, and on whom.
+ *
+ * The first question anyone sensible asks about a product offering "unlimited"
+ * anything is what a unit of it costs. Before this there was no answer.
+ */
+export const getUsage = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    res.json(await usageSummary());
   } catch (error) {
     next(error);
   }
