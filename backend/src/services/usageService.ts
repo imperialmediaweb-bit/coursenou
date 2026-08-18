@@ -115,8 +115,48 @@ export async function budgetStatus(): Promise<{
   };
 }
 
+/**
+ * A ceiling on what one account may spend in a month.
+ *
+ * The platform-wide budget alone is not enough. It stops the bill, but it stops
+ * it for everybody: one account looping through generations exhausts the month
+ * and every paying customer is refused for the rest of it. The damage lands on
+ * the wrong people. This bounds the individual, so the platform ceiling is only
+ * ever reached by real demand.
+ *
+ * Set AI_USER_MONTHLY_BUDGET_USD. Unset means no per-account ceiling.
+ */
+export async function userBudgetStatus(userId: string): Promise<{
+  limit: number | null;
+  spent: number;
+  exceeded: boolean;
+  /** True past 80%, so the interface can warn before it refuses. */
+  warning: boolean;
+}> {
+  const raw = Number(process.env.AI_USER_MONTHLY_BUDGET_USD);
+  const limit = Number.isFinite(raw) && raw > 0 ? raw : null;
+
+  if (limit === null) return { limit: null, spent: 0, exceeded: false, warning: false };
+
+  let spent = 0;
+  try {
+    const result = await prisma.aiUsage.aggregate({
+      where: { userId, createdAt: { gte: startOfThisMonth() } },
+      _sum: { costUsd: true },
+    });
+    spent = result._sum.costUsd || 0;
+  } catch {
+    // Unreadable usage must not lock a paying customer out of the product.
+    return { limit, spent: 0, exceeded: false, warning: false };
+  }
+
+  return { limit, spent, exceeded: spent >= limit, warning: spent >= limit * 0.8 };
+}
+
 export interface UsageSummary {
   budget: { limit: number | null; spent: number; exceeded: boolean; remaining: number | null };
+  /** The per-account ceiling, and how many accounts are near or past it. */
+  perUserBudget: { limit: number | null; atLimit: number; nearLimit: number };
   month: { calls: number; cost: number; inputTokens: number; outputTokens: number };
   allTime: { calls: number; cost: number };
   perCourse: { courses: number; averageCost: number };
@@ -169,8 +209,29 @@ export async function usageSummary(): Promise<UsageSummary> {
     : [];
   const userById = new Map(users.map((u) => [u.id, u]));
 
+  // How many accounts are already near or past their individual allowance.
+  // The platform total can look comfortable while a handful of accounts are
+  // about to start being refused, and that is worth seeing before they write in.
+  const perUserRaw = Number(process.env.AI_USER_MONTHLY_BUDGET_USD);
+  const perUserLimit = Number.isFinite(perUserRaw) && perUserRaw > 0 ? perUserRaw : null;
+  let atLimit = 0;
+  let nearLimit = 0;
+  if (perUserLimit !== null) {
+    const monthByUser = await prisma.aiUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { not: null }, createdAt: { gte: monthStart } },
+      _sum: { costUsd: true },
+    });
+    for (const row of monthByUser) {
+      const spent = row._sum.costUsd || 0;
+      if (spent >= perUserLimit) atLimit += 1;
+      else if (spent >= perUserLimit * 0.8) nearLimit += 1;
+    }
+  }
+
   return {
     budget,
+    perUserBudget: { limit: perUserLimit, atLimit, nearLimit },
     month: {
       calls: monthAgg._count,
       cost: monthAgg._sum.costUsd || 0,

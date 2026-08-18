@@ -36,12 +36,21 @@ export const generateOGImage = async (req: Request, res: Response, next: NextFun
       <text x="88" y="140" font-family="Arial,sans-serif" font-size="16" fill="#5C6078">AI-Powered Course</text>
       <text x="60" y="280" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#F0F0FF">${escapeXml(title.substring(0, 40))}</text>
       ${title.length > 40 ? `<text x="60" y="340" font-family="Arial,sans-serif" font-size="52" font-weight="bold" fill="#F0F0FF">${escapeXml(title.substring(40, 80))}</text>` : ''}
-      <text x="60" y="450" font-family="Arial,sans-serif" font-size="22" fill="#5C6078">${topicsCount} topics · ${language} · AI Generated</text>
+      <text x="60" y="450" font-family="Arial,sans-serif" font-size="22" fill="#5C6078">${topicsCount} topics · ${escapeXml(language)} · AI Generated</text>
       <text x="60" y="500" font-family="Arial,sans-serif" font-size="18" fill="#6C47FF">coursbit.com</text>
     </svg>`;
 
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=86400');
+    // An SVG is a document, not a picture: opened directly it runs whatever
+    // script it contains, on this origin, where the access token lives. This
+    // endpoint exists to render text a stranger typed, so it gets a policy that
+    // permits nothing — belt as well as braces, because the escaping above is
+    // one forgotten interpolation away from being wrong again. `language` was
+    // exactly that: escaped everywhere else, plain here, and accepted as free
+    // text by the API.
+    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.send(svg);
   } catch (error) { next(error); }
 };

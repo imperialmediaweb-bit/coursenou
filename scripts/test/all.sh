@@ -84,6 +84,8 @@ run "unreachable UI"     node "$REPO/scripts/audit/unreachable-ui.js"
 
 run "endpoint sweep"     bash "$REPO/scripts/audit/endpoint-sweep.sh"
 run "security"           node "$REPO/scripts/test/security.js"
+run "security (AI/web)"  bash "$REPO/scripts/test/security-ai.sh"
+run "abuse & cost"       bash "$REPO/scripts/test/abuse.sh"
 run "credentials"        bash "$REPO/scripts/test/credentials.sh"
 run "signed downloads"   bash "$REPO/scripts/test/signed-downloads.sh"
 run "reconcile"          bash "$REPO/scripts/test/reconcile.sh"

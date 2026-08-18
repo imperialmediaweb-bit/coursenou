@@ -78,3 +78,22 @@ export const priceFor = (
   const { amount, currency } = PLAN_PRICES[plan];
   return { major: amount, minor: Math.round(amount * 100), currency };
 };
+
+/**
+ * The languages a course can be written in.
+ *
+ * This was a free-text field on the server while the interface offered a fixed
+ * list, so anything at all could be stored — and the value is rendered into the
+ * SVG preview image, where a crafted "language" became script running on this
+ * origin. The list has to live here, on the server, because the interface is
+ * not what enforces it.
+ */
+export const SUPPORTED_LANGUAGES = [
+  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch',
+  'Russian', 'Chinese', 'Japanese', 'Korean', 'Arabic', 'Hindi', 'Turkish',
+  'Polish', 'Swedish', 'Norwegian', 'Danish', 'Finnish', 'Czech', 'Romanian',
+  'Hungarian', 'Greek',
+] as const;
+
+export const isSupportedLanguage = (value: string): boolean =>
+  (SUPPORTED_LANGUAGES as readonly string[]).includes(value);

@@ -12,21 +12,27 @@ import { buildCourseDocument } from '../services/courseDocument';
 import { certificateService } from '../services/certificateService';
 import { emailService } from '../services/emailService';
 import { notificationService } from '../services/notificationService';
-import { PLAN_LIMITS } from '../utils/planLimits';
+import { PLAN_LIMITS, isSupportedLanguage } from '../utils/planLimits';
 import { getAiProvider } from '../services/settingsService';
 import { assertWithinBudget } from '../utils/aiBudget';
 import { createDownloadToken, verifyDownloadToken } from '../utils/downloadToken';
 
 const generateTopicsSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
-  language: z.string().min(1, 'Language is required'),
+  language: z
+    .string()
+    .min(1, 'Language is required')
+    .refine(isSupportedLanguage, { message: 'That language is not supported' }),
   numTopics: z.number().int().min(1).max(20),
   type: z.string().optional(),
 }).passthrough();
 
 const generateCourseSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
-  language: z.string().min(1, 'Language is required'),
+  language: z
+    .string()
+    .min(1, 'Language is required')
+    .refine(isSupportedLanguage, { message: 'That language is not supported' }),
   type: z.enum(['image', 'video']),
   topics: z.array(
     z.object({
@@ -58,7 +64,7 @@ export const generateTopics = async (
       );
     }
 
-    await assertWithinBudget();
+    await assertWithinBudget(String(user._id || user.id));
 
     const topics = await aiService.generateTopics(
       await getAiProvider(),
@@ -115,7 +121,7 @@ export const generateCourse = async (
       }
     }
 
-    await assertWithinBudget();
+    await assertWithinBudget(String(user._id || user.id));
 
     let courseContent;
     try {

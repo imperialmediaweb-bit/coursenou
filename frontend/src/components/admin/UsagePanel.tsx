@@ -13,6 +13,7 @@ import api from '../../services/api';
 
 interface UsageSummary {
   budget: { limit: number | null; spent: number; exceeded: boolean; remaining: number | null };
+  perUserBudget: { limit: number | null; atLimit: number; nearLimit: number };
   month: { calls: number; cost: number; inputTokens: number; outputTokens: number };
   allTime: { calls: number; cost: number };
   perCourse: { courses: number; averageCost: number };
@@ -120,7 +121,7 @@ export default function UsagePanel() {
   }
   if (!usage) return null;
 
-  const { budget, month, allTime, perCourse } = usage;
+  const { budget, perUserBudget, month, allTime, perCourse } = usage;
   const usedFraction =
     budget.limit && budget.limit > 0 ? Math.min(1, budget.spent / budget.limit) : 0;
 
@@ -168,6 +169,38 @@ export default function UsagePanel() {
               ? 'Limit reached — new generation is paused until next month or until the limit is raised.'
               : `${money(budget.remaining ?? 0)} left this month.`}
           </p>
+        </div>
+      )}
+
+      {perUserBudget.limit === null ? (
+        <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+          <p className="text-sm font-medium text-amber-300">No per-account allowance</p>
+          <p className="mt-1 text-sm text-muted">
+            A platform limit on its own stops the bill for everyone at once, so one
+            account looping through generations locks out every paying customer for the
+            rest of the month. Set{' '}
+            <code className="rounded bg-background px-1 py-0.5 text-xs">
+              AI_USER_MONTHLY_BUDGET_USD
+            </code>{' '}
+            to bound the individual instead.
+          </p>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-lg border border-border bg-background p-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-sm font-medium text-white">
+              Per-account allowance: ${perUserBudget.limit.toFixed(2)} a month
+            </p>
+            <p className="text-sm text-muted">
+              {perUserBudget.atLimit} at the limit · {perUserBudget.nearLimit} past 80%
+            </p>
+          </div>
+          {perUserBudget.atLimit > 0 && (
+            <p className="mt-2 text-xs text-amber-300">
+              {perUserBudget.atLimit === 1 ? 'One account is' : `${perUserBudget.atLimit} accounts are`}{' '}
+              being refused new generations until next month.
+            </p>
+          )}
         </div>
       )}
 

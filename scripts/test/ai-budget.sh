@@ -116,6 +116,67 @@ AGAIN=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/courses/generate-t
 ck "generation resumes when spend falls back under the ceiling" \
   "$([ "$AGAIN" = "200" ] && echo 1 || echo 0)" "got $AGAIN"
 
+kill $SERVER_PID 2>/dev/null
+wait $SERVER_PID 2>/dev/null
+
+# --- the per-account allowance ---
+# The platform ceiling alone puts the damage on the wrong people: one account
+# looping through generations exhausts the month and every other customer is
+# refused. This half checks that the offender is stopped and the bystander is not.
+echo "Restarting with a \$1 per-account allowance and no platform ceiling..."
+AI_USER_MONTHLY_BUDGET_USD=1 PORT="$PORT" NODE_ENV=production \
+  node "$REPO/backend/dist/index.js" >>/tmp/ai-budget-server.log 2>&1 &
+SERVER_PID=$!
+
+for _ in $(seq 1 30); do
+  curl -sf "http://localhost:$PORT/api/health" >/dev/null && break
+  sleep 1
+done
+
+HEAVY_EMAIL="heavy$(date +%s)@test.local"
+HEAVY=$(curl -s -X POST "$BASE/auth/register" -H 'Content-Type: application/json' \
+  -d "{\"name\":\"Heavy\",\"email\":\"$HEAVY_EMAIL\",\"password\":\"password123\"}" |
+  node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).accessToken||'')}catch{console.log('')}})")
+
+# $4 of spend, charged to that one account.
+node -e "
+  const { PrismaClient } = require('$REPO/backend/node_modules/@prisma/client');
+  const p = new PrismaClient();
+  (async () => {
+    await p.aiUsage.deleteMany({});
+    const u = await p.user.findUnique({ where: { email: '$HEAVY_EMAIL' } });
+    await p.aiUsage.create({ data: {
+      userId: u.id, provider: 'openai', model: 'gpt-4o', operation: 'lesson',
+      inputTokens: 400000, outputTokens: 100000, costUsd: 4,
+    }});
+    await p.\$disconnect();
+  })();
+"
+
+HEAVY_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/courses/generate-topics" \
+  -H "Authorization: Bearer $HEAVY" -H 'Content-Type: application/json' \
+  -d '{"title":"Photography","language":"english","numTopics":3}')
+ck "an account past its own allowance is refused" \
+  "$([ "$HEAVY_CODE" = "429" ] && echo 1 || echo 0)" "got $HEAVY_CODE, expected 429 not 503"
+
+BYSTANDER_EMAIL="bystander$(date +%s)@test.local"
+BYSTANDER=$(curl -s -X POST "$BASE/auth/register" -H 'Content-Type: application/json' \
+  -d "{\"name\":\"By\",\"email\":\"$BYSTANDER_EMAIL\",\"password\":\"password123\"}" |
+  node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{try{console.log(JSON.parse(d).accessToken||'')}catch{console.log('')}})")
+BY_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/courses/generate-topics" \
+  -H "Authorization: Bearer $BYSTANDER" -H 'Content-Type: application/json' \
+  -d '{"title":"Photography","language":"english","numTopics":3}')
+ck "everyone else keeps working" \
+  "$([ "$BY_CODE" = "200" ] && echo 1 || echo 0)" "got $BY_CODE — one account should not lock out the platform"
+
+BODY=$(curl -s -X POST "$BASE/courses/generate-topics" \
+  -H "Authorization: Bearer $HEAVY" -H 'Content-Type: application/json' \
+  -d '{"title":"Photography","language":"english","numTopics":3}')
+ck "the refusal tells the customer when it resets" \
+  "$(echo "$BODY" | grep -qi 'next month' && echo 1 || echo 0)" "got: $BODY"
+ck "and does not disclose the amount" \
+  "$(echo "$BODY" | grep -qE '\$[0-9]' && echo 0 || echo 1)"
+
 echo
 echo "==== AI BUDGET: $PASS PASS / $FAIL FAIL ===="
 [ "$FAIL" -eq 0 ]
