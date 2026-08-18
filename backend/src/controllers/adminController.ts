@@ -7,6 +7,22 @@ import { getAiProvider, setAiProvider, configuredProviders, AI_PROVIDERS, AiProv
 import { SECRET_GROUPS, listSecrets, setSecret, clearSecret, isKnownSecret } from '../services/secretsService';
 import { testProviderCredentials } from '../services/credentialCheck';
 import { usageSummary } from '../services/usageService';
+import { getSiteSettings, setSiteSettings } from '../services/siteSettings';
+import { z } from 'zod';
+
+const siteConfigSchema = z.object({
+  siteName: z.string().min(1, 'The site needs a name').max(60).optional(),
+  description: z.string().max(300, 'Search engines truncate past about 160 characters').optional(),
+  siteUrl: z
+    .string()
+    .max(200)
+    .refine((value) => value === '' || /^https?:\/\/[^\s/]+$/.test(value), {
+      message: 'The site URL must be an origin such as https://example.com, with no trailing path',
+    })
+    .optional(),
+  analyticsSnippet: z.string().max(8000, 'That is longer than any analytics snippet').optional(),
+  indexable: z.boolean().optional(),
+});
 
 export const getStats = async (
   _req: AuthRequest,
@@ -654,6 +670,57 @@ export const getUsage = async (
 ): Promise<void> => {
   try {
     res.json(await usageSummary());
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * The public face of the site: its name, what search engines are told it is,
+ * and which analytics script runs on it.
+ *
+ * Analytics is deliberately a snippet rather than a built-in integration.
+ * Plausible, Google Analytics, PostHog, Fathom and Umami are all a script tag,
+ * and an operator who has already chosen one should not have to wait for the
+ * platform to add support for it.
+ */
+export const getSiteConfig = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    res.json(await getSiteSettings(true));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSiteConfig = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const parsed = siteConfigSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(parsed.error.errors[0].message, 400);
+    }
+
+    // The snippet is injected into every page's <head>, so whoever can save it
+    // can already run any code they like on the site. That is the point of the
+    // field, and it is why it sits behind the admin role — but a stray closing
+    // tag would break the document for every visitor, so reject the one shape
+    // that cannot be intended.
+    const snippet = parsed.data.analyticsSnippet;
+    if (snippet && /<\/head>|<\/html>|<body[\s>]/i.test(snippet)) {
+      throw new AppError(
+        'The analytics snippet must be the tags the vendor gives you, not a whole page.',
+        400
+      );
+    }
+
+    res.json(await setSiteSettings(parsed.data));
   } catch (error) {
     next(error);
   }

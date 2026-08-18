@@ -67,6 +67,21 @@ startup and every minute after.** The alternative, threading a lookup through
 every call site, would have created two subtly different paths — one for keys
 from the environment and one for keys from the panel. This way there is one.
 
+**The HTML head is rewritten per request, on the server.** A single-page app
+serves one HTML file for every URL, so setting the title from React leaves every
+crawler, link unfurler and social card reading the same generic title on every
+page — they read the first response and never run the JavaScript. `htmlShell.ts`
+rewrites the title, description, canonical link and preview tags before sending,
+which costs one string replacement per request and makes the first response true.
+
+**The analytics snippet is pasted, not integrated.** Plausible, Google
+Analytics, PostHog, Fathom and Umami are all a script tag. Storing whichever one
+the operator uses is a text field; supporting them individually would be five
+integrations that go stale. The Content-Security-Policy is widened, from the
+same setting, to exactly the hosts that snippet names — without that step the
+browser blocks the script and reports it only to a console nobody opens, which
+looks identical to the feature not working.
+
 **`isLoading` starts true when a token is present.** The route guards must wait
 for the profile before deciding. Starting at false meant every `/admin` URL
 redirected to the dashboard, because the guard read a role that had not
@@ -81,8 +96,13 @@ Fourteen tables. `User` is the hub; almost everything else hangs off it with
 read whole and never queried by lesson, so normalising it would buy nothing and
 cost a join on every read.
 
-`AppSetting` is a key/value table holding the AI provider choice and the
-encrypted credentials.
+`AppSetting` is a key/value table holding the AI provider choice, the encrypted
+credentials, and the public site settings (name, description, analytics snippet).
+
+`AiUsage` is one row per call to a model, with its token counts and the cost
+computed at write time from the rate table. Pricing at write time rather than at
+read time means a provider's later price change cannot silently rewrite what
+last month appeared to cost.
 
 ## Tests
 
@@ -94,6 +114,9 @@ node scripts/test/security.js              # written from the attacker's side
 bash scripts/test/credentials.sh           # the credentials panel
 bash scripts/test/reconcile.sh             # a payment whose webhook was lost
 bash scripts/test/signed-downloads.sh      # download authorisation
+bash scripts/test/ai-budget.sh             # cost arithmetic and the spending cap
+bash scripts/test/seo.sh                   # what a crawler and a link preview receive
+bash scripts/test/analytics.sh             # the snippet reaches the page and may run
 bash scripts/audit/endpoint-sweep.sh       # every endpoint, flags any 5xx
 node scripts/test/repeat.js user-deep 100  # run a suite 100 times
 ```

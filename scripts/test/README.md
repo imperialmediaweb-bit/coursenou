@@ -30,6 +30,18 @@ platform AI provider control, the AI cost panel checked against rows whose cost
 is known to the cent, and a blog post created through the editor and confirmed
 in the list.
 
+**`seo.sh`** — what a crawler, a link preview and a social card receive. All of
+it lives in the first response, which is the one thing only a crawler reads, so
+it is checked with `curl` and never with a browser: a browser test would pass
+whether or not any of these tags existed.
+
+**`analytics.sh`** — a snippet saved in the admin panel reaches the page *and*
+is allowed to run. The second half is the interesting one: the site's
+Content-Security-Policy blocks third-party scripts by default, so a snippet can
+be perfectly present in the source and still be refused, with the only evidence
+in a console nobody opens. This suite caught exactly that — the policy trailed
+the saved setting by a minute.
+
 **`ai-budget.sh`** — the monthly AI spending ceiling. Prices a handful of calls
 by hand and compares, then starts the server with a $1 limit and requires
 generation to be refused with a 503 once the limit is passed and to work again

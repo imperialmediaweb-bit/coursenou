@@ -12,6 +12,9 @@ import { globalLimiter } from './middleware/rateLimiter';
 import { errorHandler } from './middleware/errorHandler';
 import { seedLegalPages } from './utils/seed';
 import { applyStoredSecrets } from './services/secretsService';
+import { currentAnalyticsHosts, getSiteSettings } from './services/siteSettings';
+import { loadShell } from './services/htmlShell';
+import { appShell, robots, sitemap } from './controllers/seoController';
 
 // Startup validation: ensure JWT secrets exist. If not set, derive STABLE
 // secrets from DATABASE_URL (unique per deployment, never in source, and —
@@ -67,13 +70,21 @@ const app = express();
 app.set('trust proxy', 1);
 
 // Security
+//
+// The script hosts come from the analytics snippet saved in the admin panel.
+// Without that, pasting a vendor's snippet appears to do nothing: the browser
+// blocks the third-party script under this policy and says so only in its
+// console, so the operator concludes the feature is broken. Reading the hosts
+// back out of the snippet keeps the policy closed to everything except the
+// vendor actually configured, and reading them from the settings cache keeps
+// the header in step with the page rather than a minute behind it.
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginOpenerPolicy: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", () => currentAnalyticsHosts().join(' ')],
       workerSrc: ["'self'", "blob:"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -149,6 +160,14 @@ app.use('/api/notifications', notificationRoutes);
 // Hashed assets can be cached forever; index.html must never be cached,
 // otherwise browsers keep loading stale JS bundles after a deploy.
 const frontendDist = path.join(__dirname, '../../frontend/dist');
+loadShell(frontendDist);
+
+// Both are generated from the database rather than kept as files, so a post
+// published this morning is in the sitemap this morning. Registered before the
+// static middleware so a stale copy in the build cannot shadow them.
+app.get('/robots.txt', robots);
+app.get('/sitemap.xml', sitemap);
+
 app.use(express.static(frontendDist, {
   index: false,
   maxAge: '1y',
@@ -164,11 +183,10 @@ app.use('/api/*', (_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// SPA fallback — serve index.html for all non-API routes (never cached)
-app.get('*', (_req, res) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.sendFile(path.join(frontendDist, 'index.html'));
-});
+// SPA fallback. The same bundle for every route, but the head is rewritten
+// per URL — a crawler, a chat unfurl and a social card all read this response
+// and never run the JavaScript, so the title has to be true before React boots.
+app.get('*', appShell);
 
 // Error handler
 app.use(errorHandler);
@@ -211,6 +229,10 @@ app.listen(parseInt(PORT as string), '0.0.0.0', async () => {
       console.log(`Applied ${applied} setting(s) saved in the admin panel`);
     }
     setInterval(() => { applyStoredSecrets().catch(() => {}); }, 60_000).unref();
+
+    // Warms the settings cache, so the first page served already carries the
+    // operator's analytics snippet and a policy that permits it.
+    await getSiteSettings(true);
   } catch (err: any) {
     console.error('DB connection issue:', err.message);
     console.log('Demo login still works without DB');

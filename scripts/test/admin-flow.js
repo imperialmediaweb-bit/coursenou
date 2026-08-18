@@ -101,6 +101,11 @@ const PASS = 'password123';
       'expected both seeded operations'
     );
     ck('the heaviest accounts are listed', cost.includes(EMAIL));
+    ck('the site and analytics section renders', /Site & Analytics/i.test(cost));
+    ck(
+      'the analytics field is present to paste a snippet into',
+      (await page.locator('#analytics').count()) === 1
+    );
     ck(
       'a missing spending cap is called out',
       !process.env.AI_MONTHLY_BUDGET_USD

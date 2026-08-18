@@ -22,6 +22,8 @@ import {
   replyToMessage,
   getContentPage,
   updateContentPage,
+  getSiteConfig,
+  updateSiteConfig,
 } from '../controllers/adminController';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
@@ -43,6 +45,9 @@ router.get('/secrets', getSecrets);
 router.put('/secrets', updateSecret);
 router.post('/secrets/:group/test', testSecret);
 router.put('/settings', updateSettings);
+// Site name, search-engine description and the analytics snippet.
+router.get('/site', getSiteConfig);
+router.put('/site', updateSiteConfig);
 router.get('/blogs', getBlogs);
 router.get('/blogs/:id', getBlogById);
 router.post('/blogs', createBlog);

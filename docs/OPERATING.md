@@ -16,6 +16,7 @@ Everything an operator needs is at `/admin`.
 | AI Cost | What generation costs — per course, per user, per month |
 | AI Provider | Which model writes the courses |
 | API keys | Every credential, with a live check per provider |
+| Site & Analytics | Site name, search-engine description, indexing, analytics snippet |
 
 ## Plans
 
@@ -75,11 +76,59 @@ up a provider bill that arrives weeks later with no warning.
 Set a hard limit in each provider's console as well. Two independent ceilings
 is the right number when one of them is your own code.
 
+## Analytics
+
+**Site & Analytics** in the admin panel takes whatever snippet your analytics
+vendor gives you — Plausible, Google Analytics, PostHog, Fathom, Umami are all
+a script tag — and injects it into every page before the app loads, so a visitor
+who leaves during the load is still counted.
+
+Nothing else is needed. The site's Content-Security-Policy normally blocks
+third-party scripts, which is why pasting a snippet into a hardened site usually
+appears to do nothing; the hosts your snippet names are added to the policy
+automatically and nothing else is.
+
+There is no built-in analytics, deliberately. Every vendor here is a script tag,
+and shipping one integration would mean picking a vendor on your behalf and
+letting the other four go stale.
+
+## Search engines
+
+The same panel controls how the site presents itself:
+
+| | |
+|---|---|
+| Site name | Appears in titles, structured data and link previews |
+| Site URL | Needed for canonical links and the sitemap, which cannot be relative. Falls back to the domain the request arrived on |
+| Description | The sentence shown under the title in a search result |
+| Allow indexing | Off withdraws the sitemap, makes robots.txt refuse everything and marks every page `noindex` |
+
+`/robots.txt` and `/sitemap.xml` are generated from the database on request, so
+a post published this morning is in the sitemap this morning. Nothing to
+regenerate, nothing to commit.
+
+Each URL gets its own title, description, canonical link and preview card,
+written server-side before the page is sent — a crawler or a chat unfurl reads
+that first response and never runs the JavaScript, so a title set by React
+would be invisible to both.
+
+Signed-in pages, the admin area and shared course links are all marked
+`noindex`. A share link is public to whoever holds it but was handed out by its
+author rather than published, so it gets a proper preview card and stays out of
+search results. There is no public catalogue of generated courses; adding one
+would mean deciding that customers' courses are public, which is a decision for
+you and not for the code.
+
+**After deploying to a real domain**, fill in the Site URL, then submit
+`https://yourdomain.com/sitemap.xml` to Google Search Console and Bing Webmaster
+Tools. Nothing gets indexed until a search engine is told the site exists.
+
 ## Rebranding
 
 Renaming the product touches:
 
-- `frontend/index.html` — title and meta description
+- **Site & Analytics** in the admin panel — the name in titles and previews
+- `frontend/index.html` — the fallback title, used before settings load
 - `frontend/src/components/landing/` — navbar, hero, footer
 - `backend/src/services/emailService.ts` — sender name and templates
 - `backend/src/services/courseDocument.ts` — the exported workbook

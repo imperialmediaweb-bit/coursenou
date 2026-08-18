@@ -24,6 +24,7 @@ import { AdminStats } from '../../types';
 import AiProviderSetting from '../../components/admin/AiProviderSetting';
 import CredentialsPanel from '../../components/admin/CredentialsPanel';
 import UsagePanel from '../../components/admin/UsagePanel';
+import SitePanel from '../../components/admin/SitePanel';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -221,6 +222,7 @@ const AdminDashboard = () => {
 
       <div className="mt-8 space-y-8">
         <UsagePanel />
+        <SitePanel />
         <AiProviderSetting />
         <CredentialsPanel />
       </div>

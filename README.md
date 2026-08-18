@@ -46,8 +46,10 @@ ask an AI tutor about the material, review flashcards, sit a quiz, earn a
 certificate, export to PDF or PowerPoint, share by link. 23 languages.
 
 **For the operator** — revenue and user charts, user management, a blog editor,
-contact messages, editable legal pages, invoices, which AI model runs, and
-every API key with a live check per provider.
+contact messages, editable legal pages, invoices, which AI model runs, every API
+key with a live check per provider, what AI generation costs per course and per
+account with a monthly spending ceiling, and a field for whichever analytics
+snippet you already use.
 
 **Billing** — Stripe, PayPal, Razorpay and Paystack. Free, monthly and yearly,
 with limits enforced on the server rather than only in the interface.
@@ -64,6 +66,8 @@ npm run audit                              # static checks, no server needed
 node scripts/test/user-deep.js             # the learner side, in a real browser
 node scripts/test/admin-flow.js            # the admin area, in a real browser
 node scripts/test/security.js              # written from the attacker's side
+bash scripts/test/ai-budget.sh             # cost arithmetic and the spending cap
+bash scripts/test/seo.sh                   # what a crawler and a link preview receive
 bash scripts/audit/endpoint-sweep.sh       # every endpoint, flags any 5xx
 node scripts/test/repeat.js user-deep 100  # run a suite 100 times
 ```
