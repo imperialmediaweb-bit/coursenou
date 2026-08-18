@@ -5,6 +5,17 @@ checks and API tests both reported green while whole screens were broken.
 
 ## Running all of them
 
+In a Claude Code on the web session the environment is already up — the
+`SessionStart` hook in `.claude/hooks/session-start.sh` installs, starts
+PostgreSQL, pushes the schema, builds both halves and exports `DATABASE_URL`
+and `BASE_URL`. So:
+
+```bash
+bash scripts/test/all.sh
+```
+
+Anywhere else, do those four things yourself first:
+
 ```bash
 DATABASE_URL=... npm run build
 DATABASE_URL=... bash scripts/test/all.sh

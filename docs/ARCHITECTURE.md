@@ -106,6 +106,10 @@ last month appeared to cost.
 
 ## Tests
 
+`.claude/hooks/session-start.sh` brings the whole environment up — install,
+PostgreSQL, schema, build, environment variables — so a fresh session starts
+ready to run these rather than ready to start setting them up.
+
 ```bash
 bash scripts/test/all.sh                   # every suite, one tally
 npm run audit                              # static checks, no server needed
@@ -117,6 +121,11 @@ bash scripts/test/reconcile.sh             # a payment whose webhook was lost
 bash scripts/test/signed-downloads.sh      # download authorisation
 bash scripts/test/ai-budget.sh             # cost arithmetic and the spending cap
 bash scripts/test/seo.sh                   # what a crawler and a link preview receive
+bash scripts/test/abuse.sh                 # plan limits and where the ceilings are
+bash scripts/test/billing.sh               # duplicate payment events, plan expiry
+bash scripts/test/generation.sh            # failure paths, awkward input, 23 languages
+bash scripts/test/export.sh                # PowerPoint, certificates, public links
+bash scripts/test/security-ai.sh           # prompt injection, XSS, headers
 bash scripts/test/analytics.sh             # the snippet reaches the page and may run
 bash scripts/audit/endpoint-sweep.sh       # every endpoint, flags any 5xx
 node scripts/test/repeat.js user-deep 100  # run a suite 100 times
