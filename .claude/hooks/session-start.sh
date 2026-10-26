@@ -27,7 +27,14 @@ echo "→ dependencies"
 cd "$REPO"
 # `install` rather than `ci`: the container image is cached after this hook
 # finishes, so a warm node_modules is worth more than a reproducible one here.
-npm install --silent >/dev/null 2>&1 || npm install
+#
+# --include=dev is not optional. This hook used to export NODE_ENV=production
+# into the session, so on the *next* session npm saw it and skipped
+# devDependencies — which meant no @types, a tsc that could not compile, and a
+# build that died. The export is gone (below), but a stray NODE_ENV from
+# anywhere else would do the same, so the flag stays.
+NODE_ENV=development npm install --include=dev --silent >/dev/null 2>&1 ||
+  NODE_ENV=development npm install --include=dev
 
 echo "→ postgres"
 if [ -d "$PGDATA" ] && [ -f "$PGCONF" ]; then
@@ -75,8 +82,15 @@ npm run build >/dev/null 2>&1 || npm run build
   echo "export DATABASE_URL=\"$DB_URL\""
   echo 'export BASE_URL="http://localhost:4020"'
   echo 'export PORT=4020'
-  echo 'export NODE_ENV=production'
-  echo 'export CHROMIUM_PATH="/opt/pw-browsers/chromium-1194/chrome-linux/chrome"'
+  # NODE_ENV is deliberately not exported. Every script that needs production
+  # behaviour sets it on the server it starts (all.sh, ai-budget.sh do), and
+  # leaving it set session-wide makes the next npm install skip devDependencies.
+  # Found rather than hardcoded. The image moves Chromium between versions and
+  # renames the folder with it (chromium-1194/chrome-linux → 1243/chrome-linux64),
+  # and a stale path does not fail loudly: the browser suites simply never run,
+  # and the tally comes back 304 instead of 392 with nothing marked as failed.
+  CHROME=$(find /opt/pw-browsers -maxdepth 3 -type f -name chrome -path '*chromium-*' 2>/dev/null | sort -V | tail -1)
+  [ -n "$CHROME" ] && echo "export CHROMIUM_PATH=\"$CHROME\""
 } >> "${CLAUDE_ENV_FILE:-/dev/null}"
 
 cat <<'READY'
